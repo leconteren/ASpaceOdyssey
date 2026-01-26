@@ -2,7 +2,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { User, Post, PredictionEvent, ViewType, PredictionChoice } from './types';
 import { INITIAL_USER, parseInitialPosts } from './constants';
-import { Plus, MessageSquare, TrendingUp, User as UserIcon, LogOut, Send, CheckCircle, Clock } from 'lucide-react';
+import { Plus, MessageSquare, TrendingUp, User as UserIcon, LogOut, Send, CheckCircle, Clock, Newspaper } from 'lucide-react';
+import { DigestDashboard } from './DigestDashboard';
 
 export default function App() {
   const [currentUser, setCurrentUser] = useState<User | null>(() => {
@@ -208,11 +209,17 @@ export default function App() {
         >
           <TrendingUp size={28} />
         </button>
-        <button 
+        <button
           onClick={() => setActiveView('profile')}
           className={`p-3 rounded-2xl transition-all md:mt-8 ${activeView === 'profile' ? 'bg-amber-500/20 text-amber-400 monolith-glow' : 'text-slate-400 hover:text-white'}`}
         >
           <UserIcon size={28} />
+        </button>
+        <button
+          onClick={() => setActiveView('digest')}
+          className={`p-3 rounded-2xl transition-all md:mt-8 ${activeView === 'digest' ? 'bg-green-500/20 text-green-400 monolith-glow' : 'text-slate-400 hover:text-white'}`}
+        >
+          <Newspaper size={28} />
         </button>
         <div className="hidden md:flex flex-1"></div>
         <button 
@@ -242,11 +249,14 @@ export default function App() {
             />
           )}
           {activeView === 'profile' && (
-            <ProfileView 
+            <ProfileView
               user={{...currentUser, points: userPoints}}
               posts={posts.filter(p => p.userId === currentUser.id)}
               participatedEvents={events.filter(ev => ev.votes.some(v => v.userId === currentUser.id))}
             />
+          )}
+          {activeView === 'digest' && (
+            <DigestDashboard />
           )}
         </div>
       </main>
