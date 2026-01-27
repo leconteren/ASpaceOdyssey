@@ -15,15 +15,14 @@ import {
   MessageCircle,
   Eye,
   Share2,
-  Filter,
-  Search,
   RefreshCw,
   ChevronDown,
-  ChevronUp,
+  ChevronRight,
   Star,
   Download,
   Copy,
   Check,
+  Sparkles,
 } from 'lucide-react';
 import { DigestItem, DailyDigest, WeeklyDigest, DigestCategory } from './types';
 import { categoryInfo, allSources } from './digestSources';
@@ -38,49 +37,49 @@ import {
 } from './digestData';
 
 type ViewMode = 'daily' | 'weekly' | 'sources';
-type CategoryFilter = DigestCategory | 'all';
 
 const categoryIcons: Record<DigestCategory, React.ReactNode> = {
-  builder_insights: <Users size={18} />,
-  product_updates: <Rocket size={18} />,
-  blog_articles: <FileText size={18} />,
-  podcast_interviews: <Mic size={18} />,
-  news: <Newspaper size={18} />,
-  research: <BookOpen size={18} />,
+  builder_insights: <Users size={20} />,
+  product_updates: <Rocket size={20} />,
+  blog_articles: <FileText size={20} />,
+  podcast_interviews: <Mic size={20} />,
+  news: <Newspaper size={20} />,
+  research: <BookOpen size={20} />,
 };
 
-const categoryColors: Record<DigestCategory, string> = {
-  builder_insights: 'text-cyan-400 bg-cyan-400/10 border-cyan-400/30',
-  product_updates: 'text-purple-400 bg-purple-400/10 border-purple-400/30',
-  blog_articles: 'text-amber-400 bg-amber-400/10 border-amber-400/30',
-  podcast_interviews: 'text-rose-400 bg-rose-400/10 border-rose-400/30',
-  news: 'text-green-400 bg-green-400/10 border-green-400/30',
-  research: 'text-blue-400 bg-blue-400/10 border-blue-400/30',
+const categoryColors: Record<DigestCategory, { bg: string; border: string; text: string }> = {
+  builder_insights: { bg: 'bg-cyan-500/10', border: 'border-cyan-500/30', text: 'text-cyan-400' },
+  product_updates: { bg: 'bg-purple-500/10', border: 'border-purple-500/30', text: 'text-purple-400' },
+  blog_articles: { bg: 'bg-amber-500/10', border: 'border-amber-500/30', text: 'text-amber-400' },
+  podcast_interviews: { bg: 'bg-rose-500/10', border: 'border-rose-500/30', text: 'text-rose-400' },
+  news: { bg: 'bg-green-500/10', border: 'border-green-500/30', text: 'text-green-400' },
+  research: { bg: 'bg-blue-500/10', border: 'border-blue-500/30', text: 'text-blue-400' },
 };
+
+const categoryOrder: DigestCategory[] = [
+  'product_updates',
+  'builder_insights',
+  'news',
+  'blog_articles',
+  'podcast_interviews',
+  'research',
+];
 
 export const DigestDashboard: React.FC = () => {
   const [viewMode, setViewMode] = useState<ViewMode>('daily');
-  const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>('all');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [dailyDigests, setDailyDigests] = useState<DailyDigest[]>([]);
-  const [weeklyDigests, setWeeklyDigests] = useState<WeeklyDigest[]>([]);
   const [currentDailyDigest, setCurrentDailyDigest] = useState<DailyDigest | null>(null);
   const [currentWeeklyDigest, setCurrentWeeklyDigest] = useState<WeeklyDigest | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set(categoryOrder));
   const [copiedReport, setCopiedReport] = useState(false);
 
-  // Initialize data on mount
   useEffect(() => {
     const loadData = () => {
       setIsLoading(true);
       try {
-        // Initialize or load existing data
         const { daily, weekly } = initializeDigestData();
         setCurrentDailyDigest(daily);
         setCurrentWeeklyDigest(weekly);
-        setDailyDigests(loadDailyDigests());
-        setWeeklyDigests(loadWeeklyDigests());
       } catch (error) {
         console.error('Error loading digest data:', error);
       } finally {
@@ -90,7 +89,6 @@ export const DigestDashboard: React.FC = () => {
     loadData();
   }, []);
 
-  // Refresh data
   const handleRefresh = () => {
     setIsLoading(true);
     setTimeout(() => {
@@ -103,65 +101,43 @@ export const DigestDashboard: React.FC = () => {
     }, 500);
   };
 
-  // Filter items based on category and search
-  const filteredItems = useMemo(() => {
-    if (!currentDailyDigest) return [];
-    let items = currentDailyDigest.items;
-
-    if (categoryFilter !== 'all') {
-      items = items.filter((item) => item.category === categoryFilter);
-    }
-
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
-      items = items.filter(
-        (item) =>
-          item.title.toLowerCase().includes(query) ||
-          item.content.toLowerCase().includes(query) ||
-          item.sourceName.toLowerCase().includes(query)
-      );
-    }
-
-    return items;
-  }, [currentDailyDigest, categoryFilter, searchQuery]);
-
-  // Toggle item expansion
-  const toggleExpand = (id: string) => {
-    setExpandedItems((prev) => {
+  const toggleCategory = (cat: string) => {
+    setExpandedCategories((prev) => {
       const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
+      if (next.has(cat)) {
+        next.delete(cat);
       } else {
-        next.add(id);
+        next.add(cat);
       }
       return next;
     });
   };
+
+  // Group items by category
+  const itemsByCategory = useMemo(() => {
+    if (!currentDailyDigest) return {};
+    return currentDailyDigest.items.reduce((acc, item) => {
+      if (!acc[item.category]) acc[item.category] = [];
+      acc[item.category].push(item);
+      return acc;
+    }, {} as Record<DigestCategory, DigestItem[]>);
+  }, [currentDailyDigest]);
 
   // Generate report text
   const generateReportText = (type: 'daily' | 'weekly'): string => {
     if (type === 'daily' && currentDailyDigest) {
       const d = currentDailyDigest;
       let report = `# AI Digest 日报 - ${formatDate(d.date)}\n\n`;
-      report += `## 概览\n${d.summary}\n\n`;
+      report += `## 今日概览\n${d.summary}\n\n`;
 
-      if (d.highlights.length > 0) {
-        report += `## 今日亮点\n`;
-        d.highlights.forEach((item, i) => {
-          report += `${i + 1}. **[${item.sourceName}]** ${item.content}\n`;
-        });
-        report += '\n';
-      }
-
-      const categories = Object.keys(categoryInfo) as DigestCategory[];
-      categories.forEach((cat) => {
-        const catItems = d.items.filter((item) => item.category === cat);
-        if (catItems.length > 0) {
-          report += `## ${categoryInfo[cat].nameZh}\n`;
-          catItems.slice(0, 5).forEach((item) => {
-            report += `- **[${item.sourceName}]** ${item.content}\n`;
+      categoryOrder.forEach((cat) => {
+        const items = itemsByCategory[cat];
+        if (items && items.length > 0) {
+          report += `---\n\n## ${categoryInfo[cat].nameZh}\n\n`;
+          items.forEach((item, i) => {
+            report += `### ${i + 1}. ${item.sourceName}\n`;
+            report += `${item.content}\n\n`;
           });
-          report += '\n';
         }
       });
 
@@ -182,9 +158,10 @@ export const DigestDashboard: React.FC = () => {
       }
 
       if (w.topHighlights.length > 0) {
-        report += `## 本周亮点\n`;
-        w.topHighlights.slice(0, 10).forEach((item, i) => {
-          report += `${i + 1}. **[${item.sourceName}]** ${item.content}\n`;
+        report += `## 本周重点\n`;
+        w.topHighlights.forEach((item, i) => {
+          report += `### ${i + 1}. [${categoryInfo[item.category].nameZh}] ${item.sourceName}\n`;
+          report += `${item.content}\n\n`;
         });
       }
 
@@ -194,7 +171,6 @@ export const DigestDashboard: React.FC = () => {
     return '';
   };
 
-  // Copy report to clipboard
   const copyReport = (type: 'daily' | 'weekly') => {
     const report = generateReportText(type);
     navigator.clipboard.writeText(report);
@@ -202,7 +178,6 @@ export const DigestDashboard: React.FC = () => {
     setTimeout(() => setCopiedReport(false), 2000);
   };
 
-  // Download report as markdown
   const downloadReport = (type: 'daily' | 'weekly') => {
     const report = generateReportText(type);
     const blob = new Blob([report], { type: 'text/markdown' });
@@ -216,81 +191,49 @@ export const DigestDashboard: React.FC = () => {
     URL.revokeObjectURL(url);
   };
 
-  // Render category stats
-  const renderCategoryStats = () => {
-    if (!currentDailyDigest) return null;
-    const breakdown = currentDailyDigest.categoryBreakdown;
-
-    return (
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
-        {(Object.keys(categoryInfo) as DigestCategory[]).map((cat) => (
-          <button
-            key={cat}
-            onClick={() => setCategoryFilter(categoryFilter === cat ? 'all' : cat)}
-            className={`p-3 rounded-lg border transition-all ${
-              categoryFilter === cat
-                ? categoryColors[cat] + ' border-opacity-100'
-                : 'bg-zinc-800/50 border-zinc-700/50 hover:border-zinc-600'
-            }`}
-          >
-            <div className="flex items-center gap-2 mb-1">
-              <span className={categoryFilter === cat ? '' : 'text-zinc-400'}>
-                {categoryIcons[cat]}
-              </span>
-              <span className="text-2xl font-bold">{breakdown[cat] || 0}</span>
-            </div>
-            <div className="text-xs text-zinc-400">{categoryInfo[cat].nameZh}</div>
-          </button>
-        ))}
-      </div>
-    );
-  };
-
-  // Render digest item
-  const renderDigestItem = (item: DigestItem) => {
-    const isExpanded = expandedItems.has(item.id);
-    const colorClass = categoryColors[item.category];
+  // Render a single digest item with full content
+  const renderDigestItem = (item: DigestItem, index: number) => {
+    const colors = categoryColors[item.category];
 
     return (
       <div
         key={item.id}
-        className={`glass-card p-4 mb-3 border-l-2 ${colorClass.split(' ')[2]} transition-all hover:bg-zinc-800/30`}
+        className={`p-4 rounded-xl ${colors.bg} border ${colors.border} mb-3`}
       >
         <div className="flex items-start justify-between gap-3">
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-2 flex-wrap">
-              <span className={`px-2 py-0.5 rounded text-xs border ${colorClass}`}>
-                {categoryInfo[item.category]?.nameZh}
-              </span>
-              <span className="text-sm text-zinc-400">{item.sourceName}</span>
+          <div className="flex-1">
+            <div className="flex items-center gap-2 mb-2">
+              <span className={`font-semibold ${colors.text}`}>{item.sourceName}</span>
               {item.isHighlight && (
                 <Star size={14} className="text-amber-400 fill-amber-400" />
               )}
               <span className="text-xs text-zinc-500">
-                <Clock size={12} className="inline mr-1" />
                 {formatRelativeTime(item.timestamp)}
               </span>
             </div>
-            <p
-              className={`text-zinc-200 ${isExpanded ? '' : 'line-clamp-2'}`}
-              onClick={() => toggleExpand(item.id)}
-            >
+
+            {/* Main content - full display */}
+            <p className="text-zinc-200 leading-relaxed mb-3">
               {item.content}
             </p>
+
+            {/* Tags */}
             {item.tags && item.tags.length > 0 && (
-              <div className="flex gap-1 mt-2 flex-wrap">
+              <div className="flex gap-1 flex-wrap mb-2">
                 {item.tags.map((tag) => (
                   <span
                     key={tag}
-                    className="text-xs px-2 py-0.5 bg-zinc-700/50 rounded-full text-zinc-400"
+                    className="text-xs px-2 py-0.5 bg-zinc-800/50 rounded-full text-zinc-400"
                   >
                     #{tag}
                   </span>
                 ))}
               </div>
             )}
+
+            {/* Engagement metrics */}
             {item.engagement && (
-              <div className="flex items-center gap-4 mt-2 text-xs text-zinc-500">
+              <div className="flex items-center gap-4 text-xs text-zinc-500">
                 <span className="flex items-center gap-1">
                   <Heart size={12} /> {(item.engagement.likes || 0).toLocaleString()}
                 </span>
@@ -300,123 +243,121 @@ export const DigestDashboard: React.FC = () => {
                 <span className="flex items-center gap-1">
                   <Eye size={12} /> {(item.engagement.views || 0).toLocaleString()}
                 </span>
-                <span className="flex items-center gap-1">
-                  <MessageCircle size={12} /> {(item.engagement.comments || 0).toLocaleString()}
-                </span>
               </div>
             )}
           </div>
+
           <a
             href={item.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="p-2 text-zinc-400 hover:text-cyan-400 transition-colors"
+            className={`p-2 rounded-lg hover:bg-white/10 transition-colors ${colors.text}`}
+            title="查看原文"
           >
             <ExternalLink size={16} />
           </a>
         </div>
-        {item.content.length > 100 && (
-          <button
-            onClick={() => toggleExpand(item.id)}
-            className="text-xs text-cyan-400 mt-2 flex items-center gap-1"
-          >
-            {isExpanded ? (
-              <>
-                收起 <ChevronUp size={12} />
-              </>
-            ) : (
-              <>
-                展开 <ChevronDown size={12} />
-              </>
-            )}
-          </button>
+      </div>
+    );
+  };
+
+  // Render category section
+  const renderCategorySection = (category: DigestCategory) => {
+    const items = itemsByCategory[category];
+    if (!items || items.length === 0) return null;
+
+    const colors = categoryColors[category];
+    const isExpanded = expandedCategories.has(category);
+    const info = categoryInfo[category];
+
+    return (
+      <div key={category} className="mb-6">
+        <button
+          onClick={() => toggleCategory(category)}
+          className={`w-full flex items-center justify-between p-4 rounded-xl ${colors.bg} border ${colors.border} hover:bg-opacity-20 transition-all`}
+        >
+          <div className="flex items-center gap-3">
+            <span className={colors.text}>{categoryIcons[category]}</span>
+            <div className="text-left">
+              <h3 className={`text-lg font-bold ${colors.text}`}>{info.nameZh}</h3>
+              <p className="text-sm text-zinc-500">{items.length} 条更新</p>
+            </div>
+          </div>
+          <div className={`transition-transform ${isExpanded ? 'rotate-90' : ''}`}>
+            <ChevronRight size={20} className={colors.text} />
+          </div>
+        </button>
+
+        {isExpanded && (
+          <div className="mt-3 pl-2">
+            {items.map((item, index) => renderDigestItem(item, index))}
+          </div>
         )}
       </div>
     );
   };
 
-  // Render daily view
+  // Render daily view - organized by category
   const renderDailyView = () => {
     if (!currentDailyDigest) return null;
 
     return (
       <div>
-        {/* Summary Card */}
-        <div className="glass-card p-5 mb-6">
-          <div className="flex items-center justify-between mb-4">
+        {/* Header Summary Card */}
+        <div className="glass-card p-6 mb-6 rounded-2xl">
+          <div className="flex items-start justify-between mb-4">
             <div>
-              <h2 className="text-xl font-bold text-zinc-100">
-                {formatDate(currentDailyDigest.date)}
-              </h2>
-              <p className="text-sm text-zinc-400 mt-1">{currentDailyDigest.summary}</p>
-            </div>
-            <div className="flex gap-2">
-              <button
-                onClick={() => copyReport('daily')}
-                className="px-3 py-2 bg-zinc-700/50 hover:bg-zinc-600/50 rounded-lg text-sm flex items-center gap-2 transition-colors"
-              >
-                {copiedReport ? <Check size={16} /> : <Copy size={16} />}
-                {copiedReport ? '已复制' : '复制日报'}
-              </button>
-              <button
-                onClick={() => downloadReport('daily')}
-                className="px-3 py-2 bg-cyan-600/20 hover:bg-cyan-600/30 text-cyan-400 rounded-lg text-sm flex items-center gap-2 transition-colors"
-              >
-                <Download size={16} />
-                下载
-              </button>
+              <div className="flex items-center gap-2 mb-2">
+                <Sparkles className="text-amber-400" size={24} />
+                <h2 className="text-2xl font-bold text-zinc-100">
+                  {formatDate(currentDailyDigest.date)}
+                </h2>
+              </div>
+              <p className="text-zinc-400 leading-relaxed">
+                {currentDailyDigest.summary}
+              </p>
             </div>
           </div>
 
-          {/* Category Stats */}
-          {renderCategoryStats()}
-        </div>
-
-        {/* Highlights Section */}
-        {currentDailyDigest.highlights.length > 0 && categoryFilter === 'all' && (
-          <div className="mb-6">
-            <h3 className="text-lg font-semibold text-zinc-200 mb-3 flex items-center gap-2">
-              <Star className="text-amber-400" size={20} />
-              今日亮点
-            </h3>
-            <div className="grid gap-3">
-              {currentDailyDigest.highlights.slice(0, 5).map(renderDigestItem)}
-            </div>
+          {/* Quick stats */}
+          <div className="grid grid-cols-3 md:grid-cols-6 gap-2 mt-4 pt-4 border-t border-zinc-700/50">
+            {categoryOrder.map((cat) => {
+              const count = currentDailyDigest.categoryBreakdown[cat] || 0;
+              const colors = categoryColors[cat];
+              return (
+                <div
+                  key={cat}
+                  className={`text-center p-2 rounded-lg ${colors.bg} border ${colors.border}`}
+                >
+                  <div className={`text-xl font-bold ${colors.text}`}>{count}</div>
+                  <div className="text-xs text-zinc-500">{categoryInfo[cat].nameZh}</div>
+                </div>
+              );
+            })}
           </div>
-        )}
 
-        {/* Search and Filter Bar */}
-        <div className="flex items-center gap-3 mb-4">
-          <div className="relative flex-1">
-            <Search
-              size={18}
-              className="absolute left-3 top-1/2 transform -translate-y-1/2 text-zinc-500"
-            />
-            <input
-              type="text"
-              placeholder="搜索内容..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-zinc-800/50 border border-zinc-700/50 rounded-lg text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-cyan-500/50"
-            />
-          </div>
-          {categoryFilter !== 'all' && (
+          {/* Export buttons */}
+          <div className="flex gap-2 mt-4 pt-4 border-t border-zinc-700/50">
             <button
-              onClick={() => setCategoryFilter('all')}
-              className="px-3 py-2 bg-zinc-700/50 rounded-lg text-sm text-zinc-400 hover:text-zinc-200 transition-colors"
+              onClick={() => copyReport('daily')}
+              className="px-4 py-2 bg-zinc-700/50 hover:bg-zinc-600/50 rounded-lg text-sm flex items-center gap-2 transition-colors"
             >
-              清除筛选
+              {copiedReport ? <Check size={16} /> : <Copy size={16} />}
+              {copiedReport ? '已复制' : '复制日报'}
             </button>
-          )}
+            <button
+              onClick={() => downloadReport('daily')}
+              className="px-4 py-2 bg-cyan-600/20 hover:bg-cyan-600/30 text-cyan-400 rounded-lg text-sm flex items-center gap-2 transition-colors"
+            >
+              <Download size={16} />
+              下载 Markdown
+            </button>
+          </div>
         </div>
 
-        {/* Items List */}
-        <div className="space-y-1">
-          {filteredItems.length > 0 ? (
-            filteredItems.map(renderDigestItem)
-          ) : (
-            <div className="text-center py-10 text-zinc-500">暂无符合条件的内容</div>
-          )}
+        {/* Content by Category */}
+        <div>
+          {categoryOrder.map((category) => renderCategorySection(category))}
         </div>
       </div>
     );
@@ -429,77 +370,104 @@ export const DigestDashboard: React.FC = () => {
     return (
       <div>
         {/* Weekly Summary Card */}
-        <div className="glass-card p-5 mb-6">
-          <div className="flex items-center justify-between mb-4">
+        <div className="glass-card p-6 mb-6 rounded-2xl">
+          <div className="flex items-start justify-between mb-4">
             <div>
-              <h2 className="text-xl font-bold text-zinc-100">
-                周报: {formatDate(currentWeeklyDigest.weekStart)} -{' '}
-                {formatDate(currentWeeklyDigest.weekEnd)}
-              </h2>
-              <p className="text-sm text-zinc-400 mt-1">{currentWeeklyDigest.weekSummary}</p>
-            </div>
-            <div className="flex gap-2">
-              <button
-                onClick={() => copyReport('weekly')}
-                className="px-3 py-2 bg-zinc-700/50 hover:bg-zinc-600/50 rounded-lg text-sm flex items-center gap-2 transition-colors"
-              >
-                {copiedReport ? <Check size={16} /> : <Copy size={16} />}
-                {copiedReport ? '已复制' : '复制周报'}
-              </button>
-              <button
-                onClick={() => downloadReport('weekly')}
-                className="px-3 py-2 bg-purple-600/20 hover:bg-purple-600/30 text-purple-400 rounded-lg text-sm flex items-center gap-2 transition-colors"
-              >
-                <Download size={16} />
-                下载
-              </button>
+              <div className="flex items-center gap-2 mb-2">
+                <CalendarDays className="text-purple-400" size={24} />
+                <h2 className="text-2xl font-bold text-zinc-100">
+                  本周总结
+                </h2>
+              </div>
+              <p className="text-sm text-zinc-500 mb-3">
+                {formatDate(currentWeeklyDigest.weekStart)} - {formatDate(currentWeeklyDigest.weekEnd)}
+              </p>
+              <p className="text-zinc-400 leading-relaxed">
+                {currentWeeklyDigest.weekSummary}
+              </p>
             </div>
           </div>
 
           {/* Trends */}
           {currentWeeklyDigest.trends.length > 0 && (
-            <div className="mb-4">
-              <h3 className="text-sm font-semibold text-zinc-300 mb-2 flex items-center gap-2">
+            <div className="mt-4 pt-4 border-t border-zinc-700/50">
+              <h3 className="text-sm font-semibold text-zinc-300 mb-3 flex items-center gap-2">
                 <TrendingUp size={16} className="text-green-400" />
-                本周趋势
+                本周趋势洞察
               </h3>
-              <ul className="space-y-1">
+              <div className="space-y-2">
                 {currentWeeklyDigest.trends.map((trend, i) => (
-                  <li key={i} className="text-sm text-zinc-400 flex items-start gap-2">
-                    <span className="text-cyan-400">{i + 1}.</span>
-                    {trend}
-                  </li>
+                  <div
+                    key={i}
+                    className="flex items-start gap-3 p-3 rounded-lg bg-green-500/10 border border-green-500/20"
+                  >
+                    <span className="text-green-400 font-bold">{i + 1}.</span>
+                    <span className="text-zinc-300">{trend}</span>
+                  </div>
                 ))}
-              </ul>
+              </div>
             </div>
           )}
+
+          {/* Export buttons */}
+          <div className="flex gap-2 mt-4 pt-4 border-t border-zinc-700/50">
+            <button
+              onClick={() => copyReport('weekly')}
+              className="px-4 py-2 bg-zinc-700/50 hover:bg-zinc-600/50 rounded-lg text-sm flex items-center gap-2 transition-colors"
+            >
+              {copiedReport ? <Check size={16} /> : <Copy size={16} />}
+              {copiedReport ? '已复制' : '复制周报'}
+            </button>
+            <button
+              onClick={() => downloadReport('weekly')}
+              className="px-4 py-2 bg-purple-600/20 hover:bg-purple-600/30 text-purple-400 rounded-lg text-sm flex items-center gap-2 transition-colors"
+            >
+              <Download size={16} />
+              下载 Markdown
+            </button>
+          </div>
         </div>
 
         {/* Top Highlights */}
         <div className="mb-6">
-          <h3 className="text-lg font-semibold text-zinc-200 mb-3 flex items-center gap-2">
-            <Star className="text-amber-400" size={20} />
-            本周精选 Top 10
+          <h3 className="text-xl font-bold text-zinc-200 mb-4 flex items-center gap-2">
+            <Star className="text-amber-400" size={22} />
+            本周精选内容
           </h3>
-          <div className="space-y-1">
-            {currentWeeklyDigest.topHighlights.map(renderDigestItem)}
+          <div className="space-y-3">
+            {currentWeeklyDigest.topHighlights.map((item, index) => (
+              <div
+                key={item.id}
+                className={`p-4 rounded-xl ${categoryColors[item.category].bg} border ${categoryColors[item.category].border}`}
+              >
+                <div className="flex items-center gap-2 mb-2">
+                  <span className={`text-xs px-2 py-0.5 rounded ${categoryColors[item.category].bg} ${categoryColors[item.category].text} border ${categoryColors[item.category].border}`}>
+                    {categoryInfo[item.category].nameZh}
+                  </span>
+                  <span className={`font-semibold ${categoryColors[item.category].text}`}>
+                    {item.sourceName}
+                  </span>
+                </div>
+                <p className="text-zinc-200 leading-relaxed">{item.content}</p>
+              </div>
+            ))}
           </div>
         </div>
 
         {/* Daily Breakdown */}
         <div>
-          <h3 className="text-lg font-semibold text-zinc-200 mb-3 flex items-center gap-2">
-            <CalendarDays size={20} className="text-cyan-400" />
+          <h3 className="text-xl font-bold text-zinc-200 mb-4 flex items-center gap-2">
+            <Calendar size={22} className="text-cyan-400" />
             每日回顾
           </h3>
-          <div className="space-y-4">
+          <div className="space-y-3">
             {currentWeeklyDigest.dailyDigests.map((daily) => (
-              <details key={daily.id} className="glass-card overflow-hidden group">
+              <details key={daily.id} className="glass-card rounded-xl overflow-hidden group">
                 <summary className="p-4 cursor-pointer hover:bg-zinc-800/30 transition-colors flex items-center justify-between">
-                  <div>
+                  <div className="flex items-center gap-3">
                     <span className="font-medium text-zinc-200">{formatDate(daily.date)}</span>
-                    <span className="text-sm text-zinc-500 ml-3">
-                      {daily.items.length} 条资讯
+                    <span className="text-sm text-zinc-500">
+                      {daily.items.length} 条更新
                     </span>
                   </div>
                   <ChevronDown
@@ -510,13 +478,14 @@ export const DigestDashboard: React.FC = () => {
                 <div className="p-4 pt-0 border-t border-zinc-700/50">
                   <p className="text-sm text-zinc-400 mb-3">{daily.summary}</p>
                   <div className="flex flex-wrap gap-2">
-                    {(Object.keys(categoryInfo) as DigestCategory[]).map((cat) => {
+                    {categoryOrder.map((cat) => {
                       const count = daily.categoryBreakdown[cat] || 0;
                       if (count === 0) return null;
+                      const colors = categoryColors[cat];
                       return (
                         <span
                           key={cat}
-                          className={`px-2 py-1 rounded text-xs border ${categoryColors[cat]}`}
+                          className={`px-2 py-1 rounded text-xs border ${colors.bg} ${colors.border} ${colors.text}`}
                         >
                           {categoryInfo[cat].nameZh}: {count}
                         </span>
@@ -543,55 +512,61 @@ export const DigestDashboard: React.FC = () => {
 
     return (
       <div>
-        <div className="glass-card p-5 mb-6">
+        <div className="glass-card p-5 mb-6 rounded-2xl">
           <h2 className="text-xl font-bold text-zinc-100 mb-2">信息源管理</h2>
           <p className="text-sm text-zinc-400">
             共 {allSources.length} 个信息源，涵盖 AI 行业核心人物、公司和媒体
           </p>
         </div>
 
-        {(Object.keys(groupedSources) as DigestCategory[]).map((cat) => (
-          <div key={cat} className="mb-6">
-            <h3 className="text-lg font-semibold text-zinc-200 mb-3 flex items-center gap-2">
-              <span className={categoryColors[cat].split(' ')[0]}>{categoryIcons[cat]}</span>
-              {categoryInfo[cat]?.nameZh || cat}
-              <span className="text-sm text-zinc-500 font-normal">
-                ({groupedSources[cat].length})
-              </span>
-            </h3>
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
-              {groupedSources[cat].map((source) => (
-                <a
-                  key={source.id}
-                  href={source.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="glass-card p-3 hover:bg-zinc-800/30 transition-colors group"
-                >
-                  <div className="flex items-center gap-3">
-                    <div
-                      className={`w-10 h-10 rounded-full flex items-center justify-center text-lg font-bold ${categoryColors[source.category]}`}
-                    >
-                      {source.name.charAt(0)}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="font-medium text-zinc-200 truncate group-hover:text-cyan-400 transition-colors">
-                        {source.nameZh || source.name}
+        {categoryOrder.map((cat) => {
+          const sources = groupedSources[cat];
+          if (!sources || sources.length === 0) return null;
+          const colors = categoryColors[cat];
+
+          return (
+            <div key={cat} className="mb-6">
+              <h3 className={`text-lg font-semibold mb-3 flex items-center gap-2 ${colors.text}`}>
+                {categoryIcons[cat]}
+                {categoryInfo[cat]?.nameZh || cat}
+                <span className="text-sm text-zinc-500 font-normal">
+                  ({sources.length})
+                </span>
+              </h3>
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
+                {sources.map((source) => (
+                  <a
+                    key={source.id}
+                    href={source.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={`p-3 rounded-xl ${colors.bg} border ${colors.border} hover:bg-opacity-20 transition-colors group`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div
+                        className={`w-10 h-10 rounded-full flex items-center justify-center text-lg font-bold ${colors.bg} ${colors.text} border ${colors.border}`}
+                      >
+                        {source.name.charAt(0)}
                       </div>
-                      <div className="text-xs text-zinc-500 truncate">
-                        {source.descriptionZh || source.description}
+                      <div className="flex-1 min-w-0">
+                        <div className={`font-medium truncate group-hover:${colors.text} transition-colors text-zinc-200`}>
+                          {source.nameZh || source.name}
+                        </div>
+                        <div className="text-xs text-zinc-500 truncate">
+                          {source.descriptionZh || source.description}
+                        </div>
                       </div>
+                      <ExternalLink
+                        size={16}
+                        className={`${colors.text} opacity-50 group-hover:opacity-100 transition-opacity flex-shrink-0`}
+                      />
                     </div>
-                    <ExternalLink
-                      size={16}
-                      className="text-zinc-500 group-hover:text-cyan-400 transition-colors flex-shrink-0"
-                    />
-                  </div>
-                </a>
-              ))}
+                  </a>
+                ))}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     );
   };
@@ -608,20 +583,20 @@ export const DigestDashboard: React.FC = () => {
   }
 
   return (
-    <div className="max-w-6xl mx-auto">
+    <div className="max-w-4xl mx-auto">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-zinc-100">AI Digest Dashboard</h1>
+          <h1 className="text-3xl font-bold text-zinc-100">AI Digest</h1>
           <p className="text-sm text-zinc-500">追踪 AI 行业动态，每日自动更新</p>
         </div>
         <button
           onClick={handleRefresh}
           disabled={isLoading}
-          className="px-4 py-2 bg-cyan-600/20 hover:bg-cyan-600/30 text-cyan-400 rounded-lg flex items-center gap-2 transition-colors disabled:opacity-50"
+          className="px-4 py-2 bg-cyan-600/20 hover:bg-cyan-600/30 text-cyan-400 rounded-xl flex items-center gap-2 transition-colors disabled:opacity-50"
         >
           <RefreshCw size={18} className={isLoading ? 'animate-spin' : ''} />
-          刷新数据
+          刷新
         </button>
       </div>
 
@@ -629,32 +604,32 @@ export const DigestDashboard: React.FC = () => {
       <div className="flex gap-2 mb-6">
         <button
           onClick={() => setViewMode('daily')}
-          className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-colors ${
+          className={`px-5 py-2.5 rounded-xl flex items-center gap-2 transition-colors font-medium ${
             viewMode === 'daily'
-              ? 'bg-cyan-600/20 text-cyan-400'
-              : 'bg-zinc-800/50 text-zinc-400 hover:text-zinc-200'
+              ? 'bg-cyan-600/20 text-cyan-400 border border-cyan-500/30'
+              : 'bg-zinc-800/50 text-zinc-400 hover:text-zinc-200 border border-transparent'
           }`}
         >
           <Calendar size={18} />
-          日报
+          今日日报
         </button>
         <button
           onClick={() => setViewMode('weekly')}
-          className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-colors ${
+          className={`px-5 py-2.5 rounded-xl flex items-center gap-2 transition-colors font-medium ${
             viewMode === 'weekly'
-              ? 'bg-purple-600/20 text-purple-400'
-              : 'bg-zinc-800/50 text-zinc-400 hover:text-zinc-200'
+              ? 'bg-purple-600/20 text-purple-400 border border-purple-500/30'
+              : 'bg-zinc-800/50 text-zinc-400 hover:text-zinc-200 border border-transparent'
           }`}
         >
           <CalendarDays size={18} />
-          周报
+          本周周报
         </button>
         <button
           onClick={() => setViewMode('sources')}
-          className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-colors ${
+          className={`px-5 py-2.5 rounded-xl flex items-center gap-2 transition-colors font-medium ${
             viewMode === 'sources'
-              ? 'bg-amber-600/20 text-amber-400'
-              : 'bg-zinc-800/50 text-zinc-400 hover:text-zinc-200'
+              ? 'bg-amber-600/20 text-amber-400 border border-amber-500/30'
+              : 'bg-zinc-800/50 text-zinc-400 hover:text-zinc-200 border border-transparent'
           }`}
         >
           <Users size={18} />
