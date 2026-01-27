@@ -11,7 +11,7 @@ export default function App() {
     return saved ? JSON.parse(saved) : null;
   });
   
-  const [activeView, setActiveView] = useState<ViewType>('feed');
+  const [activeView, setActiveView] = useState<ViewType>('digest');
   const [posts, setPosts] = useState<Post[]>([]);
   const [events, setEvents] = useState<PredictionEvent[]>([]);
   const [inputName, setInputName] = useState('');
