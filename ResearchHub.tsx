@@ -3,7 +3,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   Building2, LineChart, Database, Newspaper, Users,
   Send, Trash2, Zap, Bot, ChevronRight, Loader2,
-  Sparkles, ArrowLeft, CheckCircle2, AlertCircle
+  Sparkles, ArrowLeft, CheckCircle2, AlertCircle, X
 } from 'lucide-react';
 import { Orchestrator, AGENT_CONFIGS, ALL_AGENT_IDS } from './agents/index';
 import { AgentId, AgentMessage } from './agents/types';
@@ -12,12 +12,12 @@ const ICON_MAP: Record<string, React.FC<{ size?: number; className?: string }>> 
   Building2, LineChart, Database, Newspaper, Users,
 };
 
-const COLOR_MAP: Record<string, { bg: string; text: string; border: string; glow: string }> = {
-  cyan: { bg: 'bg-cyan-500/10', text: 'text-cyan-400', border: 'border-cyan-500/30', glow: 'shadow-cyan-500/20' },
-  purple: { bg: 'bg-purple-500/10', text: 'text-purple-400', border: 'border-purple-500/30', glow: 'shadow-purple-500/20' },
-  emerald: { bg: 'bg-emerald-500/10', text: 'text-emerald-400', border: 'border-emerald-500/30', glow: 'shadow-emerald-500/20' },
-  amber: { bg: 'bg-amber-500/10', text: 'text-amber-400', border: 'border-amber-500/30', glow: 'shadow-amber-500/20' },
-  rose: { bg: 'bg-rose-500/10', text: 'text-rose-400', border: 'border-rose-500/30', glow: 'shadow-rose-500/20' },
+const COLOR_MAP: Record<string, { bg: string; text: string; border: string; light: string }> = {
+  cyan: { bg: 'bg-blue-500', text: 'text-blue-600', border: 'border-blue-500', light: 'bg-blue-50' },
+  purple: { bg: 'bg-purple-500', text: 'text-purple-600', border: 'border-purple-500', light: 'bg-purple-50' },
+  emerald: { bg: 'bg-emerald-500', text: 'text-emerald-600', border: 'border-emerald-500', light: 'bg-emerald-50' },
+  amber: { bg: 'bg-amber-500', text: 'text-amber-600', border: 'border-amber-500', light: 'bg-amber-50' },
+  rose: { bg: 'bg-rose-500', text: 'text-rose-600', border: 'border-rose-500', light: 'bg-rose-50' },
 };
 
 type Mode = 'select' | 'chat' | 'multi';
@@ -62,7 +62,6 @@ export default function ResearchHub() {
   const selectAgent = (id: AgentId) => {
     setActiveAgent(id);
     setMode('chat');
-    // Sync messages from orchestrator
     const agent = orchestrator.getAgent(id);
     setMessages(prev => ({ ...prev, [id]: agent.getHistory() }));
   };
@@ -92,7 +91,6 @@ export default function ResearchHub() {
         setStreamingText(accumulated);
       });
 
-      // Sync from agent history
       const agent = orchestrator.getAgent(activeAgent);
       setMessages(prev => ({ ...prev, [activeAgent]: agent.getHistory() }));
       setStreamingText('');
@@ -166,31 +164,38 @@ export default function ResearchHub() {
 
   if (mode === 'select') {
     return (
-      <div className="space-y-8 animate-in fade-in duration-500">
-        <header className="mb-10">
-          <h2 className="text-3xl font-bold text-white mb-2 flex items-center gap-3">
-            <Sparkles className="text-cyan-400" size={32} />
-            投研中台
-          </h2>
-          <p className="text-slate-500">Multi-Agent Investment Research Platform</p>
-        </header>
+      <div className="max-w-4xl">
+        {/* Header */}
+        <div className="reddit-card p-4 mb-4">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-10 h-10 bg-[#ff4500] rounded-lg flex items-center justify-center">
+              <Sparkles className="text-white" size={22} />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold text-gray-800">AI 研究中心</h2>
+              <p className="text-sm text-gray-500">Multi-Agent Investment Research Platform</p>
+            </div>
+          </div>
+        </div>
 
         {/* Mode Toggle */}
-        <div className="flex gap-3 mb-8">
-          <button
-            onClick={() => setMode('select')}
-            className="px-4 py-2 rounded-xl bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 font-medium text-sm"
-          >
-            <Bot size={16} className="inline mr-2" />
-            单Agent对话
-          </button>
-          <button
-            onClick={() => setMode('multi')}
-            className="px-4 py-2 rounded-xl bg-white/5 text-slate-400 border border-white/10 hover:bg-white/10 font-medium text-sm transition-all"
-          >
-            <Zap size={16} className="inline mr-2" />
-            多Agent协同
-          </button>
+        <div className="reddit-card mb-4">
+          <div className="flex border-b border-gray-200">
+            <button
+              onClick={() => setMode('select')}
+              className="flex-1 py-3 text-sm font-semibold text-[#ff4500] border-b-2 border-[#ff4500] flex items-center justify-center gap-2"
+            >
+              <Bot size={16} />
+              单Agent对话
+            </button>
+            <button
+              onClick={() => setMode('multi')}
+              className="flex-1 py-3 text-sm font-semibold text-gray-500 hover:text-gray-700 flex items-center justify-center gap-2"
+            >
+              <Zap size={16} />
+              多Agent协同
+            </button>
+          </div>
         </div>
 
         {/* Agent Grid */}
@@ -205,31 +210,31 @@ export default function ResearchHub() {
               <button
                 key={id}
                 onClick={() => selectAgent(id)}
-                className={`glass-card p-6 rounded-2xl text-left hover:bg-white/5 transition-all group border-l-4 ${colors.border}`}
+                className="reddit-card p-4 text-left hover:border-gray-400 transition-all group"
               >
-                <div className="flex items-start justify-between mb-4">
-                  <div className={`p-3 rounded-xl ${colors.bg}`}>
-                    <Icon size={24} className={colors.text} />
+                <div className="flex items-start justify-between mb-3">
+                  <div className={`p-2.5 rounded-lg ${colors.light}`}>
+                    <Icon size={20} className={colors.text} />
                   </div>
-                  <ChevronRight size={20} className="text-zinc-600 group-hover:text-white transition-colors" />
+                  <ChevronRight size={18} className="text-gray-400 group-hover:text-gray-600 transition-colors" />
                 </div>
-                <h3 className="text-lg font-bold text-white mb-1">{config.nameZh}</h3>
-                <p className="text-xs text-slate-500 mb-3">{config.name}</p>
-                <p className="text-sm text-slate-400 mb-4 line-clamp-2">{config.description}</p>
+                <h3 className="font-bold text-gray-800 mb-0.5">{config.nameZh}</h3>
+                <p className="text-xs text-gray-500 mb-2">{config.name}</p>
+                <p className="text-sm text-gray-600 mb-3 line-clamp-2">{config.description}</p>
                 <div className="flex flex-wrap gap-1">
                   {config.capabilities.slice(0, 3).map((cap, i) => (
-                    <span key={i} className="text-xs px-2 py-0.5 rounded-full bg-white/5 text-zinc-500">
+                    <span key={i} className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">
                       {cap}
                     </span>
                   ))}
                   {config.capabilities.length > 3 && (
-                    <span className="text-xs px-2 py-0.5 rounded-full bg-white/5 text-zinc-500">
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">
                       +{config.capabilities.length - 3}
                     </span>
                   )}
                 </div>
                 {msgCount > 0 && (
-                  <div className="mt-3 pt-3 border-t border-white/5 text-xs text-zinc-500">
+                  <div className="mt-3 pt-3 border-t border-gray-100 text-xs text-gray-500">
                     {msgCount} 条对话记录
                   </div>
                 )}
@@ -243,27 +248,30 @@ export default function ResearchHub() {
 
   if (mode === 'multi') {
     return (
-      <div className="space-y-6 animate-in fade-in duration-500">
-        <header className="flex items-center gap-4 mb-6">
-          <button
-            onClick={() => setMode('select')}
-            className="p-2 rounded-xl hover:bg-white/10 text-slate-400 transition-all"
-          >
-            <ArrowLeft size={20} />
-          </button>
-          <div>
-            <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-              <Zap className="text-amber-400" size={24} />
-              多Agent协同分析
-            </h2>
-            <p className="text-sm text-slate-500">选择Agent组合，一键调度多维分析</p>
+      <div className="max-w-4xl">
+        {/* Header */}
+        <div className="reddit-card p-4 mb-4">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setMode('select')}
+              className="p-2 hover:bg-gray-100 rounded-lg text-gray-500 transition-colors"
+            >
+              <ArrowLeft size={20} />
+            </button>
+            <div className="w-10 h-10 bg-amber-500 rounded-lg flex items-center justify-center">
+              <Zap className="text-white" size={22} />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold text-gray-800">多Agent协同分析</h2>
+              <p className="text-sm text-gray-500">选择Agent组合，一键调度多维分析</p>
+            </div>
           </div>
-        </header>
+        </div>
 
         {/* Agent Selector */}
-        <div className="glass-card p-6 rounded-2xl space-y-4">
-          <p className="text-sm font-medium text-slate-300">选择参与分析的Agent:</p>
-          <div className="flex flex-wrap gap-3">
+        <div className="reddit-card p-4 mb-4">
+          <p className="text-sm font-semibold text-gray-700 mb-3">选择参与分析的Agent:</p>
+          <div className="flex flex-wrap gap-2 mb-3">
             {ALL_AGENT_IDS.map(id => {
               const config = AGENT_CONFIGS[id];
               const colors = COLOR_MAP[config.color];
@@ -274,30 +282,30 @@ export default function ResearchHub() {
                 <button
                   key={id}
                   onClick={() => toggleMultiAgent(id)}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-xl border transition-all ${
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-full border text-sm transition-all ${
                     selected
-                      ? `${colors.bg} ${colors.text} ${colors.border}`
-                      : 'bg-white/5 text-slate-500 border-white/10 hover:bg-white/10'
+                      ? `${colors.light} ${colors.text} ${colors.border}`
+                      : 'bg-white text-gray-600 border-gray-300 hover:border-gray-400'
                   }`}
                 >
-                  <Icon size={16} />
-                  <span className="text-sm font-medium">{config.nameZh}</span>
-                  {selected && <CheckCircle2 size={14} />}
+                  <Icon size={14} />
+                  <span className="font-medium">{config.nameZh}</span>
+                  {selected && <CheckCircle2 size={12} />}
                 </button>
               );
             })}
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-3 text-xs">
             <button
               onClick={() => setMultiAgents([...ALL_AGENT_IDS])}
-              className="text-xs text-cyan-400 hover:underline"
+              className="text-[#0079d3] hover:underline"
             >
               全选
             </button>
-            <span className="text-xs text-zinc-600">|</span>
+            <span className="text-gray-300">|</span>
             <button
               onClick={() => setMultiAgents([])}
-              className="text-xs text-slate-500 hover:underline"
+              className="text-gray-500 hover:underline"
             >
               清空
             </button>
@@ -305,28 +313,28 @@ export default function ResearchHub() {
         </div>
 
         {/* Query Input */}
-        <div className="glass-card p-6 rounded-2xl space-y-4">
+        <div className="reddit-card p-4 mb-4">
           <textarea
             value={multiQuery}
             onChange={e => setMultiQuery(e.target.value)}
             placeholder="输入你的研究问题... 例如：分析NVIDIA当前的投资价值"
-            className="w-full h-28 bg-transparent text-white placeholder-zinc-600 outline-none resize-none text-lg"
+            className="w-full h-28 border border-gray-200 rounded-lg p-3 outline-none focus:border-[#0079d3] resize-none text-gray-800"
           />
-          <div className="flex justify-between items-center border-t border-white/5 pt-4">
-            <p className="text-xs text-zinc-500">
+          <div className="flex justify-between items-center mt-3 pt-3 border-t border-gray-100">
+            <p className="text-xs text-gray-500">
               已选 {multiAgents.length} 个Agent
               {multiAgents.includes('committee') && ' (含投委会综合评估)'}
             </p>
             <button
               onClick={runMultiAgent}
               disabled={multiRunning || multiAgents.length === 0 || !multiQuery.trim()}
-              className={`px-6 py-2 rounded-xl font-bold flex items-center gap-2 transition-all ${
+              className={`px-5 py-2 rounded-full font-semibold flex items-center gap-2 text-sm transition-all ${
                 multiRunning || multiAgents.length === 0 || !multiQuery.trim()
-                  ? 'bg-zinc-800 text-zinc-500 cursor-not-allowed'
-                  : 'bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white monolith-glow'
+                  ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                  : 'bg-[#ff4500] text-white hover:bg-[#ff5414]'
               }`}
             >
-              {multiRunning ? <Loader2 size={18} className="animate-spin" /> : <Zap size={18} />}
+              {multiRunning ? <Loader2 size={16} className="animate-spin" /> : <Zap size={16} />}
               {multiRunning ? '分析中...' : '启动分析'}
             </button>
           </div>
@@ -334,49 +342,49 @@ export default function ResearchHub() {
 
         {/* Results */}
         {multiStatus.length > 0 && (
-          <div className="space-y-4">
-            <h3 className="text-lg font-bold text-white">分析进度与结果</h3>
+          <div className="space-y-3">
+            <h3 className="font-bold text-gray-800 px-1">分析进度与结果</h3>
             {multiStatus.map(({ agentId, status, result }) => {
               const config = AGENT_CONFIGS[agentId];
               const colors = COLOR_MAP[config.color];
               const Icon = ICON_MAP[config.icon] || Bot;
 
               return (
-                <div key={agentId} className={`glass-card rounded-2xl overflow-hidden border-l-4 ${colors.border}`}>
-                  <div className="p-4 flex items-center justify-between">
+                <div key={agentId} className="reddit-card overflow-hidden">
+                  <div className="p-4 flex items-center justify-between border-b border-gray-100">
                     <div className="flex items-center gap-3">
-                      <div className={`p-2 rounded-lg ${colors.bg}`}>
-                        <Icon size={18} className={colors.text} />
+                      <div className={`p-2 rounded-lg ${colors.light}`}>
+                        <Icon size={16} className={colors.text} />
                       </div>
                       <div>
-                        <span className="font-bold text-white">{config.nameZh}</span>
-                        <span className="text-xs text-zinc-500 ml-2">{config.name}</span>
+                        <span className="font-semibold text-gray-800">{config.nameZh}</span>
+                        <span className="text-xs text-gray-500 ml-2">{config.name}</span>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div>
                       {status === 'pending' && (
-                        <span className="text-xs text-zinc-500 bg-zinc-800 px-2 py-1 rounded">等待中</span>
+                        <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">等待中</span>
                       )}
                       {status === 'running' && (
-                        <span className="text-xs text-amber-400 bg-amber-500/10 px-2 py-1 rounded flex items-center gap-1">
+                        <span className="text-xs text-amber-600 bg-amber-50 px-2 py-1 rounded flex items-center gap-1">
                           <Loader2 size={12} className="animate-spin" /> 分析中
                         </span>
                       )}
                       {status === 'completed' && (
-                        <span className="text-xs text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded flex items-center gap-1">
+                        <span className="text-xs text-green-600 bg-green-50 px-2 py-1 rounded flex items-center gap-1">
                           <CheckCircle2 size={12} /> 完成
                         </span>
                       )}
                       {status === 'failed' && (
-                        <span className="text-xs text-rose-400 bg-rose-500/10 px-2 py-1 rounded flex items-center gap-1">
+                        <span className="text-xs text-red-600 bg-red-50 px-2 py-1 rounded flex items-center gap-1">
                           <AlertCircle size={12} /> 失败
                         </span>
                       )}
                     </div>
                   </div>
                   {result && (
-                    <div className="px-4 pb-4 border-t border-white/5">
-                      <div className="mt-4 text-sm text-slate-300 leading-relaxed whitespace-pre-wrap prose-invert max-h-96 overflow-y-auto">
+                    <div className="p-4 bg-gray-50">
+                      <div className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap max-h-80 overflow-y-auto">
                         <MarkdownRenderer content={result} />
                       </div>
                     </div>
@@ -397,69 +405,71 @@ export default function ResearchHub() {
   const currentMessages = activeAgent ? messages[activeAgent] : [];
 
   return (
-    <div className="flex flex-col h-[calc(100vh-2rem)] animate-in fade-in duration-300">
+    <div className="max-w-2xl flex flex-col h-[calc(100vh-6rem)]">
       {/* Header */}
-      <div className="flex items-center gap-4 pb-4 border-b border-white/5 mb-4 shrink-0">
-        <button
-          onClick={() => setMode('select')}
-          className="p-2 rounded-xl hover:bg-white/10 text-slate-400 transition-all"
-        >
-          <ArrowLeft size={20} />
-        </button>
-        {agentConfig && agentColors && (
-          <div className="flex items-center gap-3 flex-1">
-            <div className={`p-2 rounded-xl ${agentColors.bg}`}>
-              <AgentIcon size={22} className={agentColors.text} />
+      <div className="reddit-card p-3 mb-4 shrink-0">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setMode('select')}
+            className="p-2 hover:bg-gray-100 rounded-lg text-gray-500 transition-colors"
+          >
+            <ArrowLeft size={18} />
+          </button>
+          {agentConfig && agentColors && (
+            <div className="flex items-center gap-3 flex-1">
+              <div className={`p-2 rounded-lg ${agentColors.light}`}>
+                <AgentIcon size={18} className={agentColors.text} />
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-800">{agentConfig.nameZh}</h3>
+                <p className="text-xs text-gray-500">{agentConfig.name}</p>
+              </div>
             </div>
-            <div>
-              <h3 className="font-bold text-white">{agentConfig.nameZh}</h3>
-              <p className="text-xs text-zinc-500">{agentConfig.name}</p>
-            </div>
+          )}
+          <div className="flex gap-1">
+            <button
+              onClick={() => setMode('multi')}
+              className="p-2 hover:bg-gray-100 rounded-lg text-gray-500 transition-colors"
+              title="多Agent协同"
+            >
+              <Zap size={16} />
+            </button>
+            <button
+              onClick={clearChat}
+              className="p-2 hover:bg-gray-100 rounded-lg text-gray-500 transition-colors"
+              title="清空对话"
+            >
+              <Trash2 size={16} />
+            </button>
           </div>
-        )}
-        <div className="flex gap-2">
-          <button
-            onClick={() => setMode('multi')}
-            className="p-2 rounded-xl hover:bg-white/10 text-slate-400 transition-all"
-            title="多Agent协同"
-          >
-            <Zap size={18} />
-          </button>
-          <button
-            onClick={clearChat}
-            className="p-2 rounded-xl hover:bg-white/10 text-slate-400 transition-all"
-            title="清空对话"
-          >
-            <Trash2 size={18} />
-          </button>
         </div>
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto space-y-4 pb-4">
+      <div className="flex-1 overflow-y-auto space-y-3 pb-4">
         {currentMessages.length === 0 && !streamingText && (
-          <div className="flex flex-col items-center justify-center h-full text-center">
+          <div className="reddit-card p-8 text-center">
             {agentConfig && agentColors && (
               <>
-                <div className={`p-6 rounded-3xl ${agentColors.bg} mb-6`}>
-                  <AgentIcon size={48} className={agentColors.text} />
+                <div className={`w-16 h-16 mx-auto rounded-2xl ${agentColors.light} flex items-center justify-center mb-4`}>
+                  <AgentIcon size={32} className={agentColors.text} />
                 </div>
-                <h3 className="text-xl font-bold text-white mb-2">{agentConfig.nameZh}</h3>
-                <p className="text-sm text-slate-500 mb-6 max-w-md">{agentConfig.description}</p>
-                <div className="flex flex-wrap gap-2 justify-center max-w-lg">
+                <h3 className="text-lg font-bold text-gray-800 mb-2">{agentConfig.nameZh}</h3>
+                <p className="text-sm text-gray-500 mb-6 max-w-md mx-auto">{agentConfig.description}</p>
+                <div className="flex flex-wrap gap-2 justify-center mb-6">
                   {agentConfig.capabilities.map((cap, i) => (
-                    <span key={i} className={`text-xs px-3 py-1 rounded-full ${agentColors.bg} ${agentColors.text}`}>
+                    <span key={i} className={`text-xs px-3 py-1 rounded-full ${agentColors.light} ${agentColors.text}`}>
                       {cap}
                     </span>
                   ))}
                 </div>
-                <div className="mt-8 space-y-2">
-                  <p className="text-xs text-zinc-600">试试问:</p>
+                <div className="space-y-2 max-w-md mx-auto">
+                  <p className="text-xs text-gray-500 mb-2">试试问:</p>
                   {getExampleQueries(activeAgent!).map((q, i) => (
                     <button
                       key={i}
                       onClick={() => { setInput(q); inputRef.current?.focus(); }}
-                      className="block w-full text-left text-sm text-slate-400 hover:text-white bg-white/5 hover:bg-white/10 px-4 py-2 rounded-xl transition-all"
+                      className="block w-full text-left text-sm text-gray-600 hover:text-gray-800 bg-gray-50 hover:bg-gray-100 px-4 py-2.5 rounded-lg transition-all border border-gray-200"
                     >
                       {q}
                     </button>
@@ -474,21 +484,21 @@ export default function ResearchHub() {
           <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
             <div className={`max-w-[85%] ${
               msg.role === 'user'
-                ? 'bg-cyan-600/20 border border-cyan-500/20 rounded-2xl rounded-tr-md px-4 py-3'
+                ? 'bg-[#0079d3] text-white rounded-2xl rounded-tr-md px-4 py-3'
                 : msg.role === 'system'
-                  ? 'bg-rose-500/10 border border-rose-500/20 rounded-2xl px-4 py-3'
-                  : 'glass-card rounded-2xl rounded-tl-md px-4 py-3'
+                  ? 'bg-red-50 border border-red-200 text-red-700 rounded-2xl px-4 py-3'
+                  : 'reddit-card rounded-2xl rounded-tl-md px-4 py-3'
             }`}>
               {msg.role === 'agent' && agentConfig && agentColors && (
-                <div className="flex items-center gap-2 mb-2 pb-2 border-b border-white/5">
-                  <AgentIcon size={14} className={agentColors.text} />
+                <div className="flex items-center gap-2 mb-2 pb-2 border-b border-gray-100">
+                  <AgentIcon size={12} className={agentColors.text} />
                   <span className={`text-xs font-medium ${agentColors.text}`}>{agentConfig.nameZh}</span>
                 </div>
               )}
-              <div className="text-sm text-slate-300 leading-relaxed whitespace-pre-wrap">
-                <MarkdownRenderer content={msg.content} />
+              <div className={`text-sm leading-relaxed whitespace-pre-wrap ${msg.role === 'user' ? '' : 'text-gray-700'}`}>
+                {msg.role === 'user' ? msg.content : <MarkdownRenderer content={msg.content} />}
               </div>
-              <div className="mt-2 text-xs text-zinc-600">
+              <div className={`mt-2 text-xs ${msg.role === 'user' ? 'text-blue-200' : 'text-gray-400'}`}>
                 {new Date(msg.timestamp).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}
               </div>
             </div>
@@ -497,15 +507,15 @@ export default function ResearchHub() {
 
         {streamingText && (
           <div className="flex justify-start">
-            <div className="max-w-[85%] glass-card rounded-2xl rounded-tl-md px-4 py-3">
+            <div className="max-w-[85%] reddit-card rounded-2xl rounded-tl-md px-4 py-3">
               {agentConfig && agentColors && (
-                <div className="flex items-center gap-2 mb-2 pb-2 border-b border-white/5">
-                  <AgentIcon size={14} className={agentColors.text} />
+                <div className="flex items-center gap-2 mb-2 pb-2 border-b border-gray-100">
+                  <AgentIcon size={12} className={agentColors.text} />
                   <span className={`text-xs font-medium ${agentColors.text}`}>{agentConfig.nameZh}</span>
-                  <Loader2 size={12} className="animate-spin text-zinc-500" />
+                  <Loader2 size={10} className="animate-spin text-gray-400" />
                 </div>
               )}
-              <div className="text-sm text-slate-300 leading-relaxed whitespace-pre-wrap">
+              <div className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">
                 <MarkdownRenderer content={streamingText} />
               </div>
             </div>
@@ -514,9 +524,9 @@ export default function ResearchHub() {
 
         {isLoading && !streamingText && (
           <div className="flex justify-start">
-            <div className="glass-card rounded-2xl px-4 py-3 flex items-center gap-2">
-              <Loader2 size={16} className="animate-spin text-cyan-400" />
-              <span className="text-sm text-zinc-400">思考中...</span>
+            <div className="reddit-card rounded-2xl px-4 py-3 flex items-center gap-2">
+              <Loader2 size={14} className="animate-spin text-[#0079d3]" />
+              <span className="text-sm text-gray-500">思考中...</span>
             </div>
           </div>
         )}
@@ -525,8 +535,8 @@ export default function ResearchHub() {
       </div>
 
       {/* Input */}
-      <div className="shrink-0 pt-4 border-t border-white/5">
-        <div className="glass-card rounded-2xl p-3 flex items-end gap-3">
+      <div className="shrink-0 pt-4">
+        <div className="reddit-card p-3 flex items-end gap-3">
           <textarea
             ref={inputRef}
             value={input}
@@ -534,22 +544,22 @@ export default function ResearchHub() {
             onKeyDown={handleKeyDown}
             placeholder={`向${agentConfig?.nameZh || 'Agent'}提问...`}
             rows={1}
-            className="flex-1 bg-transparent text-white placeholder-zinc-600 outline-none resize-none text-sm max-h-32"
+            className="flex-1 outline-none resize-none text-sm text-gray-800 max-h-32 py-2"
             style={{ minHeight: '2.5rem' }}
           />
           <button
             onClick={handleSend}
             disabled={isLoading || !input.trim()}
-            className={`p-2 rounded-xl transition-all shrink-0 ${
+            className={`p-2.5 rounded-full transition-all shrink-0 ${
               isLoading || !input.trim()
-                ? 'bg-zinc-800 text-zinc-600 cursor-not-allowed'
-                : `${agentColors?.bg || 'bg-cyan-500/20'} ${agentColors?.text || 'text-cyan-400'} hover:opacity-80`
+                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                : 'bg-[#0079d3] text-white hover:bg-[#006cbd]'
             }`}
           >
-            <Send size={18} />
+            <Send size={16} />
           </button>
         </div>
-        <p className="text-xs text-zinc-600 mt-2 text-center">
+        <p className="text-xs text-gray-400 mt-2 text-center">
           Enter 发送 / Shift+Enter 换行
         </p>
       </div>
@@ -568,26 +578,26 @@ function MarkdownRenderer({ content }: { content: string }) {
 
     if (line.startsWith('## ')) {
       elements.push(
-        <h2 key={i} className="text-lg font-bold text-white mt-4 mb-2">
+        <h2 key={i} className="text-base font-bold text-gray-800 mt-4 mb-2">
           {renderInline(line.slice(3))}
         </h2>
       );
     } else if (line.startsWith('### ')) {
       elements.push(
-        <h3 key={i} className="text-base font-bold text-slate-200 mt-3 mb-1">
+        <h3 key={i} className="text-sm font-bold text-gray-700 mt-3 mb-1">
           {renderInline(line.slice(4))}
         </h3>
       );
     } else if (line.startsWith('# ')) {
       elements.push(
-        <h1 key={i} className="text-xl font-bold text-white mt-4 mb-2">
+        <h1 key={i} className="text-lg font-bold text-gray-800 mt-4 mb-2">
           {renderInline(line.slice(2))}
         </h1>
       );
     } else if (line.startsWith('- ') || line.startsWith('* ')) {
       elements.push(
         <div key={i} className="flex gap-2 ml-2">
-          <span className="text-zinc-500 shrink-0">-</span>
+          <span className="text-gray-400 shrink-0">-</span>
           <span>{renderInline(line.slice(2))}</span>
         </div>
       );
@@ -596,21 +606,20 @@ function MarkdownRenderer({ content }: { content: string }) {
       if (match) {
         elements.push(
           <div key={i} className="flex gap-2 ml-2">
-            <span className="text-zinc-500 shrink-0">{match[1]}.</span>
+            <span className="text-gray-400 shrink-0">{match[1]}.</span>
             <span>{renderInline(match[2])}</span>
           </div>
         );
       }
     } else if (line.startsWith('> ')) {
       elements.push(
-        <blockquote key={i} className="border-l-2 border-cyan-500/40 pl-3 text-zinc-400 italic my-2">
+        <blockquote key={i} className="border-l-2 border-[#ff4500] pl-3 text-gray-500 italic my-2">
           {renderInline(line.slice(2))}
         </blockquote>
       );
     } else if (line.startsWith('|') && line.endsWith('|')) {
-      // Simple table row
       const cells = line.split('|').filter(Boolean).map(c => c.trim());
-      if (cells.every(c => /^[-:]+$/.test(c))) continue; // separator
+      if (cells.every(c => /^[-:]+$/.test(c))) continue;
       elements.push(
         <div key={i} className="flex gap-4 text-xs">
           {cells.map((cell, j) => (
@@ -636,25 +645,23 @@ function renderInline(text: string): React.ReactNode {
   let key = 0;
 
   while (remaining.length > 0) {
-    // Bold
     const boldMatch = remaining.match(/\*\*(.+?)\*\*/);
     if (boldMatch && boldMatch.index !== undefined) {
       if (boldMatch.index > 0) {
         parts.push(<span key={key++}>{processEmphasis(remaining.slice(0, boldMatch.index))}</span>);
       }
-      parts.push(<strong key={key++} className="text-white font-semibold">{boldMatch[1]}</strong>);
+      parts.push(<strong key={key++} className="text-gray-800 font-semibold">{boldMatch[1]}</strong>);
       remaining = remaining.slice(boldMatch.index + boldMatch[0].length);
       continue;
     }
 
-    // Code
     const codeMatch = remaining.match(/`(.+?)`/);
     if (codeMatch && codeMatch.index !== undefined) {
       if (codeMatch.index > 0) {
         parts.push(<span key={key++}>{processEmphasis(remaining.slice(0, codeMatch.index))}</span>);
       }
       parts.push(
-        <code key={key++} className="text-cyan-400 bg-cyan-500/10 px-1.5 py-0.5 rounded text-xs">
+        <code key={key++} className="text-[#0079d3] bg-blue-50 px-1.5 py-0.5 rounded text-xs">
           {codeMatch[1]}
         </code>
       );
@@ -670,7 +677,6 @@ function renderInline(text: string): React.ReactNode {
 }
 
 function processEmphasis(text: string): React.ReactNode {
-  // Handle *italic*
   const parts: React.ReactNode[] = [];
   const regex = /\*(.+?)\*/g;
   let lastIndex = 0;
@@ -680,7 +686,7 @@ function processEmphasis(text: string): React.ReactNode {
     if (match.index > lastIndex) {
       parts.push(text.slice(lastIndex, match.index));
     }
-    parts.push(<em key={match.index} className="text-slate-200">{match[1]}</em>);
+    parts.push(<em key={match.index} className="text-gray-600">{match[1]}</em>);
     lastIndex = match.index + match[0].length;
   }
 

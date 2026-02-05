@@ -2,7 +2,12 @@
 import React, { useState, useEffect } from 'react';
 import { Post, PredictionEvent, ViewType, PredictionChoice } from './types';
 import { INITIAL_USER, parseInitialPosts } from './constants';
-import { Plus, MessageSquare, TrendingUp, User as UserIcon, LogOut, Send, Clock, Sparkles, Loader2, Mail, Lock, UserPlus } from 'lucide-react';
+import {
+  Home, TrendingUp, User as UserIcon, LogOut, Send, Clock,
+  Sparkles, Loader2, Mail, Lock, UserPlus, Search, Bell,
+  ChevronUp, ChevronDown, MessageCircle, Share2, Bookmark,
+  Plus, MoreHorizontal, Award, Calendar
+} from 'lucide-react';
 import ResearchHub from './ResearchHub';
 import { useAuth, UserProfile } from './lib/AuthContext';
 
@@ -26,7 +31,6 @@ export default function App() {
     const savedPosts = localStorage.getItem('monolith_posts');
     let loadedPosts: Post[] = savedPosts ? JSON.parse(savedPosts) : [];
 
-    // 始终确保初始内容存在
     const initial = parseInitialPosts(INITIAL_USER.id, INITIAL_USER.name);
     const currentIds = new Set(loadedPosts.map(p => p.id));
     const missingInitial = initial.filter(p => !currentIds.has(p.id));
@@ -75,7 +79,6 @@ export default function App() {
           setAuthError(error.message || '注册失败，请重试');
         } else {
           setAuthError('');
-          // Show success message - Supabase may require email confirmation
           setAuthMode('login');
           alert('注册成功！如果需要邮箱验证，请查收验证邮件。');
         }
@@ -91,7 +94,6 @@ export default function App() {
     await signOut();
   };
 
-  // Convert profile to User format for compatibility
   const currentUser = profile ? {
     id: profile.id,
     name: profile.name,
@@ -178,7 +180,6 @@ export default function App() {
     }));
   };
 
-  // Calculate points for current user
   const userPoints = events.reduce((acc, ev) => {
     if (ev.status === 'solved' && ev.finalResult !== undefined) {
       const userVote = ev.votes.find(v => v.userId === currentUser?.id);
@@ -192,92 +193,105 @@ export default function App() {
   // Loading state
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center cosmic-gradient">
+      <div className="min-h-screen flex items-center justify-center bg-[#dae0e6]">
         <div className="text-center">
-          <Loader2 className="w-12 h-12 animate-spin text-cyan-400 mx-auto mb-4" />
-          <p className="text-slate-400">加载中...</p>
+          <Loader2 className="w-10 h-10 animate-spin text-[#ff4500] mx-auto mb-4" />
+          <p className="text-gray-500">加载中...</p>
         </div>
       </div>
     );
   }
 
-  // Auth screen
+  // Auth screen - Reddit style
   if (!user || !profile) {
     return (
-      <div className="min-h-screen flex items-center justify-center cosmic-gradient p-4">
-        <div className="glass-card p-8 rounded-3xl w-full max-w-md monolith-glow">
-          <div className="text-center mb-8">
-            <h1 className="text-4xl font-bold tracking-tight mb-2 text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-400">
-              Monolith 饭否
-            </h1>
-            <p className="text-slate-400 italic">Stay Different, Stay Weird</p>
+      <div className="min-h-screen bg-[#dae0e6] flex items-center justify-center p-4">
+        <div className="bg-white rounded-lg shadow-lg w-full max-w-md overflow-hidden">
+          {/* Header */}
+          <div className="bg-[#ff4500] p-6 text-white text-center">
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <Sparkles size={28} />
+              <h1 className="text-2xl font-bold">投研中台</h1>
+            </div>
+            <p className="text-sm opacity-90">Multi-Agent Investment Research</p>
           </div>
 
           {/* Auth Mode Toggle */}
-          <div className="flex mb-6 bg-white/5 rounded-xl p-1">
+          <div className="flex border-b border-gray-200">
             <button
               onClick={() => { setAuthMode('login'); setAuthError(''); }}
-              className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${
-                authMode === 'login' ? 'bg-cyan-600 text-white' : 'text-slate-400 hover:text-white'
+              className={`flex-1 py-3 text-sm font-semibold transition-all ${
+                authMode === 'login'
+                  ? 'text-[#ff4500] border-b-2 border-[#ff4500]'
+                  : 'text-gray-500 hover:text-gray-700'
               }`}
             >
               登录
             </button>
             <button
               onClick={() => { setAuthMode('signup'); setAuthError(''); }}
-              className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${
-                authMode === 'signup' ? 'bg-purple-600 text-white' : 'text-slate-400 hover:text-white'
+              className={`flex-1 py-3 text-sm font-semibold transition-all ${
+                authMode === 'signup'
+                  ? 'text-[#ff4500] border-b-2 border-[#ff4500]'
+                  : 'text-gray-500 hover:text-gray-700'
               }`}
             >
               注册
             </button>
           </div>
 
-          <form onSubmit={handleAuth} className="space-y-4">
+          {/* Form */}
+          <form onSubmit={handleAuth} className="p-6 space-y-4">
             {authMode === 'signup' && (
               <div>
-                <label className="block text-sm font-medium mb-2 text-slate-300">
-                  <UserPlus size={14} className="inline mr-2" />
+                <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">
                   姓名
                 </label>
-                <input
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="你的名字..."
-                  className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 focus:border-cyan-500 outline-none transition-all text-white placeholder-slate-500"
-                />
+                <div className="relative">
+                  <UserPlus size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <input
+                    type="text"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="你的名字"
+                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:border-[#0079d3] focus:ring-1 focus:ring-[#0079d3] outline-none transition-all"
+                  />
+                </div>
               </div>
             )}
             <div>
-              <label className="block text-sm font-medium mb-2 text-slate-300">
-                <Mail size={14} className="inline mr-2" />
+              <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">
                 邮箱
               </label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="your@email.com"
-                className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 focus:border-cyan-500 outline-none transition-all text-white placeholder-slate-500"
-              />
+              <div className="relative">
+                <Mail size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="your@email.com"
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:border-[#0079d3] focus:ring-1 focus:ring-[#0079d3] outline-none transition-all"
+                />
+              </div>
             </div>
             <div>
-              <label className="block text-sm font-medium mb-2 text-slate-300">
-                <Lock size={14} className="inline mr-2" />
+              <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">
                 密码
               </label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 focus:border-cyan-500 outline-none transition-all text-white placeholder-slate-500"
-              />
+              <div className="relative">
+                <Lock size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:border-[#0079d3] focus:ring-1 focus:ring-[#0079d3] outline-none transition-all"
+                />
+              </div>
             </div>
 
             {authError && (
-              <div className="text-rose-400 text-sm bg-rose-500/10 border border-rose-500/20 rounded-xl px-4 py-3">
+              <div className="text-red-600 text-sm bg-red-50 border border-red-200 rounded-lg px-4 py-3">
                 {authError}
               </div>
             )}
@@ -285,7 +299,7 @@ export default function App() {
             <button
               type="submit"
               disabled={authLoading}
-              className="w-full bg-gradient-to-r from-cyan-600 to-purple-600 hover:from-cyan-500 hover:to-purple-500 py-3 rounded-xl font-bold transition-all monolith-glow disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="w-full bg-[#ff4500] hover:bg-[#ff5414] text-white py-3 rounded-full font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {authLoading ? (
                 <>
@@ -293,12 +307,12 @@ export default function App() {
                   处理中...
                 </>
               ) : (
-                authMode === 'login' ? 'Enter The Monolith' : '创建账户'
+                authMode === 'login' ? '登录' : '创建账户'
               )}
             </button>
           </form>
 
-          <p className="text-xs text-zinc-500 text-center mt-6">
+          <p className="text-xs text-gray-500 text-center pb-6">
             {authMode === 'login'
               ? '没有账户？点击上方"注册"创建'
               : '已有账户？点击上方"登录"'}
@@ -309,44 +323,107 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-black flex flex-col md:flex-row">
-      {/* Sidebar Navigation */}
-      <nav className="fixed bottom-0 left-0 w-full md:relative md:w-24 bg-zinc-900/50 border-t md:border-t-0 md:border-r border-white/10 backdrop-blur-xl flex md:flex-col items-center justify-around md:justify-start md:pt-12 p-4 z-50">
-        <button
-          onClick={() => setActiveView('feed')}
-          className={`p-3 rounded-2xl transition-all ${activeView === 'feed' ? 'bg-cyan-500/20 text-cyan-400 monolith-glow' : 'text-slate-400 hover:text-white'}`}
-        >
-          <MessageSquare size={28} />
-        </button>
-        <button
-          onClick={() => setActiveView('market')}
-          className={`p-3 rounded-2xl transition-all md:mt-8 ${activeView === 'market' ? 'bg-purple-500/20 text-purple-400 monolith-glow' : 'text-slate-400 hover:text-white'}`}
-        >
-          <TrendingUp size={28} />
-        </button>
-        <button
-          onClick={() => setActiveView('research')}
-          className={`p-3 rounded-2xl transition-all md:mt-8 ${activeView === 'research' ? 'bg-emerald-500/20 text-emerald-400 monolith-glow' : 'text-slate-400 hover:text-white'}`}
-        >
-          <Sparkles size={28} />
-        </button>
-        <button
-          onClick={() => setActiveView('profile')}
-          className={`p-3 rounded-2xl transition-all md:mt-8 ${activeView === 'profile' ? 'bg-amber-500/20 text-amber-400 monolith-glow' : 'text-slate-400 hover:text-white'}`}
-        >
-          <UserIcon size={28} />
-        </button>
-        <div className="hidden md:flex flex-1"></div>
-        <button
-          onClick={handleLogout}
-          className="p-3 text-red-400 hover:bg-red-400/10 rounded-2xl transition-all"
-        >
-          <LogOut size={24} />
-        </button>
-      </nav>
+    <div className="min-h-screen bg-[#dae0e6]">
+      {/* Top Header - Reddit style */}
+      <header className="bg-white border-b border-gray-300 sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 h-12 flex items-center justify-between">
+          {/* Logo */}
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 bg-[#ff4500] rounded-full flex items-center justify-center">
+              <Sparkles size={18} className="text-white" />
+            </div>
+            <span className="font-bold text-lg hidden sm:block">投研中台</span>
+          </div>
 
-      <main className="flex-1 overflow-y-auto pb-24 md:pb-0 h-screen scroll-smooth">
-        <div className="max-w-3xl mx-auto px-4 py-8">
+          {/* Search Bar */}
+          <div className="flex-1 max-w-xl mx-4">
+            <div className="header-search flex items-center px-4 py-2">
+              <Search size={18} className="text-gray-400 mr-2" />
+              <input
+                type="text"
+                placeholder="搜索..."
+                className="bg-transparent outline-none flex-1 text-sm"
+              />
+            </div>
+          </div>
+
+          {/* Right Actions */}
+          <div className="flex items-center gap-3">
+            <button className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+              <Bell size={20} className="text-gray-600" />
+            </button>
+            <div className="flex items-center gap-2 p-1 hover:bg-gray-100 rounded cursor-pointer">
+              <img
+                src={currentUser.avatar}
+                className="w-8 h-8 rounded-full object-cover"
+                alt=""
+              />
+              <div className="hidden sm:block text-left">
+                <p className="text-xs font-medium text-gray-800">{currentUser.name}</p>
+                <p className="text-xs text-gray-500">{userPoints} 积分</p>
+              </div>
+            </div>
+            <button
+              onClick={handleLogout}
+              className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-600"
+              title="退出登录"
+            >
+              <LogOut size={18} />
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <div className="max-w-7xl mx-auto flex">
+        {/* Left Sidebar */}
+        <aside className="hidden lg:block w-56 shrink-0 sticky top-12 h-[calc(100vh-3rem)] overflow-y-auto bg-white border-r border-gray-200">
+          <nav className="py-4">
+            <button
+              onClick={() => setActiveView('feed')}
+              className={`sidebar-link w-full ${activeView === 'feed' ? 'active' : ''}`}
+            >
+              <Home size={20} />
+              <span>信息流</span>
+            </button>
+            <button
+              onClick={() => setActiveView('market')}
+              className={`sidebar-link w-full ${activeView === 'market' ? 'active' : ''}`}
+            >
+              <TrendingUp size={20} />
+              <span>预测市场</span>
+            </button>
+            <button
+              onClick={() => setActiveView('research')}
+              className={`sidebar-link w-full ${activeView === 'research' ? 'active' : ''}`}
+            >
+              <Sparkles size={20} />
+              <span>AI 研究</span>
+            </button>
+            <button
+              onClick={() => setActiveView('profile')}
+              className={`sidebar-link w-full ${activeView === 'profile' ? 'active' : ''}`}
+            >
+              <UserIcon size={20} />
+              <span>个人中心</span>
+            </button>
+
+            <div className="border-t border-gray-200 mt-4 pt-4 px-4">
+              <p className="text-xs text-gray-500 uppercase font-semibold tracking-wide mb-3">
+                AI Agents
+              </p>
+              <div className="space-y-1 text-sm text-gray-600">
+                <p className="px-2 py-1 hover:bg-gray-100 rounded cursor-pointer">基本面研究</p>
+                <p className="px-2 py-1 hover:bg-gray-100 rounded cursor-pointer">技术分析</p>
+                <p className="px-2 py-1 hover:bg-gray-100 rounded cursor-pointer">数据追踪</p>
+                <p className="px-2 py-1 hover:bg-gray-100 rounded cursor-pointer">新闻情报</p>
+                <p className="px-2 py-1 hover:bg-gray-100 rounded cursor-pointer">投委会</p>
+              </div>
+            </div>
+          </nav>
+        </aside>
+
+        {/* Main Content */}
+        <main className="flex-1 min-h-[calc(100vh-3rem)] py-4 px-4">
           {activeView === 'feed' && (
             <FeedView
               posts={posts}
@@ -373,8 +450,80 @@ export default function App() {
               participatedEvents={events.filter(ev => ev.votes.some(v => v.userId === currentUser.id))}
             />
           )}
-        </div>
-      </main>
+        </main>
+
+        {/* Right Sidebar - Info Panel */}
+        <aside className="hidden xl:block w-80 shrink-0 py-4 pr-4">
+          <div className="reddit-card p-4 mb-4">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-[#ff4500] rounded-full flex items-center justify-center">
+                <Sparkles size={20} className="text-white" />
+              </div>
+              <div>
+                <h3 className="font-bold text-gray-800">投研中台</h3>
+                <p className="text-xs text-gray-500">r/ResearchHub</p>
+              </div>
+            </div>
+            <p className="text-sm text-gray-600 mb-4">
+              多Agent协同的智能投研平台，集成基本面、技术面、数据追踪、新闻情报等AI分析能力。
+            </p>
+            <button
+              onClick={() => setActiveView('research')}
+              className="reddit-btn w-full text-center"
+            >
+              开始研究
+            </button>
+          </div>
+
+          <div className="reddit-card p-4">
+            <h4 className="font-bold text-gray-800 mb-3 flex items-center gap-2">
+              <Award size={18} className="text-[#ff4500]" />
+              排行榜
+            </h4>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between py-2 border-b border-gray-100">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-[#ff4500]">1</span>
+                  <span className="text-sm text-gray-700">{currentUser.name}</span>
+                </div>
+                <span className="text-xs font-semibold text-gray-500">{userPoints} pts</span>
+              </div>
+            </div>
+          </div>
+        </aside>
+      </div>
+
+      {/* Mobile Bottom Navigation */}
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex justify-around py-2 z-50">
+        <button
+          onClick={() => setActiveView('feed')}
+          className={`flex flex-col items-center gap-1 p-2 ${activeView === 'feed' ? 'text-[#ff4500]' : 'text-gray-500'}`}
+        >
+          <Home size={20} />
+          <span className="text-xs">信息流</span>
+        </button>
+        <button
+          onClick={() => setActiveView('market')}
+          className={`flex flex-col items-center gap-1 p-2 ${activeView === 'market' ? 'text-[#ff4500]' : 'text-gray-500'}`}
+        >
+          <TrendingUp size={20} />
+          <span className="text-xs">预测</span>
+        </button>
+        <button
+          onClick={() => setActiveView('research')}
+          className={`flex flex-col items-center gap-1 p-2 ${activeView === 'research' ? 'text-[#ff4500]' : 'text-gray-500'}`}
+        >
+          <Sparkles size={20} />
+          <span className="text-xs">研究</span>
+        </button>
+        <button
+          onClick={() => setActiveView('profile')}
+          className={`flex flex-col items-center gap-1 p-2 ${activeView === 'profile' ? 'text-[#ff4500]' : 'text-gray-500'}`}
+        >
+          <UserIcon size={20} />
+          <span className="text-xs">我的</span>
+        </button>
+      </nav>
     </div>
   );
 }
@@ -387,65 +536,122 @@ interface AppUser {
   points: number;
 }
 
+// Feed View - Reddit style cards
 const FeedView = ({ posts, createPost, currentUser }: { posts: Post[], createPost: (c: string) => void, currentUser: AppUser }) => {
   const [content, setContent] = useState('');
+  const [showCompose, setShowCompose] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!content.trim()) return;
     createPost(content);
     setContent('');
+    setShowCompose(false);
   };
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
-      <header className="mb-10">
-        <h2 className="text-3xl font-bold text-white mb-2">Monolith 饭否 Feed</h2>
-        <p className="text-slate-500">周会纪要、发散思考、灵感瞬间</p>
-      </header>
-
-      <form onSubmit={handleSubmit} className="glass-card p-6 rounded-3xl space-y-4">
-        <textarea
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-          placeholder="分享你的灵感... (支持带日期的批量粘贴)"
-          className="w-full h-32 bg-transparent text-white placeholder-zinc-600 outline-none resize-none text-lg"
-        />
-        <div className="flex justify-between items-center border-t border-white/5 pt-4">
-          <p className="text-xs text-zinc-500">提示: 输入带日期(YYYY-MM-DD)的内容可自动切割</p>
-          <button
-            type="submit"
-            className="bg-cyan-600 hover:bg-cyan-500 text-white px-6 py-2 rounded-xl flex items-center gap-2 font-bold transition-all monolith-glow"
-          >
-            <Send size={18} /> 发射
-          </button>
+    <div className="max-w-2xl space-y-4">
+      {/* Create Post Card */}
+      <div className="reddit-card p-3">
+        <div className="flex items-center gap-3">
+          <img
+            src={currentUser.avatar}
+            className="w-10 h-10 rounded-full object-cover"
+            alt=""
+          />
+          <input
+            type="text"
+            placeholder="分享你的想法..."
+            className="flex-1 bg-gray-100 hover:bg-gray-200 border border-gray-200 rounded-lg px-4 py-2 text-sm outline-none cursor-pointer transition-colors"
+            onClick={() => setShowCompose(true)}
+            readOnly
+          />
         </div>
-      </form>
+      </div>
 
-      <div className="space-y-6">
-        {posts.map(post => (
-          <div key={post.id} className="glass-card p-6 rounded-3xl border-l-4 border-cyan-500/50 hover:bg-white/5 transition-all group">
-            <div className="flex justify-between items-start mb-4">
-              <div className="flex items-center gap-3">
-                <img src={`https://picsum.photos/seed/${post.userName}/100`} className="w-10 h-10 rounded-full border border-white/20" alt="" />
-                <div>
-                  <h4 className="font-bold text-slate-200">{post.userName}</h4>
-                  <p className="text-xs text-slate-500 flex items-center gap-1">
-                    <Clock size={12} /> {post.dateStr}
-                  </p>
-                </div>
-              </div>
+      {/* Compose Modal */}
+      {showCompose && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setShowCompose(false)}>
+          <div className="bg-white rounded-lg w-full max-w-lg" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between p-4 border-b border-gray-200">
+              <h3 className="font-semibold text-gray-800">创建帖子</h3>
+              <button onClick={() => setShowCompose(false)} className="text-gray-500 hover:text-gray-700">
+                <MoreHorizontal size={20} />
+              </button>
             </div>
-            <div className="text-slate-300 leading-relaxed whitespace-pre-wrap">
+            <form onSubmit={handleSubmit} className="p-4">
+              <textarea
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+                placeholder="分享你的灵感... (支持带日期的批量粘贴)"
+                className="w-full h-40 border border-gray-200 rounded-lg p-3 outline-none focus:border-[#0079d3] resize-none text-gray-800"
+                autoFocus
+              />
+              <div className="flex justify-between items-center mt-4">
+                <p className="text-xs text-gray-500">提示: 输入带日期(YYYY-MM-DD)的内容可自动切割</p>
+                <button
+                  type="submit"
+                  disabled={!content.trim()}
+                  className="reddit-btn disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  发布
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Posts List */}
+      {posts.map(post => (
+        <div key={post.id} className="reddit-card flex">
+          {/* Vote Column */}
+          <div className="vote-column flex flex-col items-center py-2 px-2 rounded-l">
+            <button className="p-1 upvote text-gray-400 hover:bg-gray-100 rounded">
+              <ChevronUp size={20} />
+            </button>
+            <span className="text-xs font-bold text-gray-800 my-1">
+              {Math.floor(Math.random() * 50) + 1}
+            </span>
+            <button className="p-1 downvote text-gray-400 hover:bg-gray-100 rounded">
+              <ChevronDown size={20} />
+            </button>
+          </div>
+
+          {/* Content */}
+          <div className="flex-1 p-3">
+            <div className="flex items-center gap-2 text-xs text-gray-500 mb-2">
+              <img src={`https://picsum.photos/seed/${post.userName}/100`} className="w-5 h-5 rounded-full" alt="" />
+              <span className="font-medium text-gray-800 hover:underline cursor-pointer">{post.userName}</span>
+              <span>·</span>
+              <Clock size={12} />
+              <span>{post.dateStr}</span>
+            </div>
+            <div className="text-gray-800 text-sm leading-relaxed whitespace-pre-wrap mb-3">
               {post.content}
             </div>
+            <div className="flex items-center gap-4 text-gray-500">
+              <button className="flex items-center gap-1 text-xs hover:bg-gray-100 px-2 py-1 rounded transition-colors">
+                <MessageCircle size={16} />
+                <span>评论</span>
+              </button>
+              <button className="flex items-center gap-1 text-xs hover:bg-gray-100 px-2 py-1 rounded transition-colors">
+                <Share2 size={16} />
+                <span>分享</span>
+              </button>
+              <button className="flex items-center gap-1 text-xs hover:bg-gray-100 px-2 py-1 rounded transition-colors">
+                <Bookmark size={16} />
+                <span>保存</span>
+              </button>
+            </div>
           </div>
-        ))}
-      </div>
+        </div>
+      ))}
     </div>
   );
 };
 
+// Market View - Reddit style
 const MarketView = ({ events, createEvent, onVote, onSolve, currentUser }: {
   events: PredictionEvent[],
   createEvent: (t: string, d: string, s: string) => void,
@@ -466,184 +672,322 @@ const MarketView = ({ events, createEvent, onVote, onSolve, currentUser }: {
   };
 
   return (
-    <div className="space-y-8 animate-in slide-in-from-bottom duration-500">
-      <header className="flex justify-between items-end mb-10">
+    <div className="max-w-2xl space-y-4">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-4">
         <div>
-          <h2 className="text-3xl font-bold text-white mb-2">Prediction Market</h2>
-          <p className="text-slate-500">预测未来，洞察先机</p>
+          <h2 className="text-xl font-bold text-gray-800">预测市场</h2>
+          <p className="text-sm text-gray-500">预测未来，洞察先机</p>
         </div>
         <button
-          onClick={() => setShowCreate(!showCreate)}
-          className="bg-purple-600 hover:bg-purple-500 p-4 rounded-2xl text-white monolith-glow transition-all"
+          onClick={() => setShowCreate(true)}
+          className="reddit-btn flex items-center gap-2"
         >
-          <Plus size={24} />
+          <Plus size={18} />
+          创建预测
         </button>
-      </header>
+      </div>
 
+      {/* Create Modal */}
       {showCreate && (
-        <form onSubmit={handleCreate} className="glass-card p-6 rounded-3xl space-y-4 animate-in fade-in zoom-in duration-300">
-          <input
-            value={title} onChange={e => setTitle(e.target.value)}
-            placeholder="赌约标题: 如 Tsla 2026年股价是否 > 600"
-            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 outline-none"
-          />
-          <textarea
-            value={desc} onChange={e => setDesc(e.target.value)}
-            placeholder="详细描述与结算标准..."
-            className="w-full h-24 bg-white/5 border border-white/10 rounded-xl px-4 py-3 outline-none resize-none"
-          />
-          <div className="flex gap-4">
-            <input
-              type="date" value={date} onChange={e => setDate(e.target.value)}
-              className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 outline-none text-zinc-400"
-            />
-            <button type="submit" className="bg-purple-600 px-8 rounded-xl font-bold">创建</button>
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setShowCreate(false)}>
+          <div className="bg-white rounded-lg w-full max-w-lg" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between p-4 border-b border-gray-200">
+              <h3 className="font-semibold text-gray-800">创建新预测</h3>
+              <button onClick={() => setShowCreate(false)} className="text-gray-500 hover:text-gray-700">
+                <MoreHorizontal size={20} />
+              </button>
+            </div>
+            <form onSubmit={handleCreate} className="p-4 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">标题</label>
+                <input
+                  value={title}
+                  onChange={e => setTitle(e.target.value)}
+                  placeholder="如: TSLA 2026年股价是否 > 600"
+                  className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm outline-none focus:border-[#0079d3]"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">描述</label>
+                <textarea
+                  value={desc}
+                  onChange={e => setDesc(e.target.value)}
+                  placeholder="详细描述与结算标准..."
+                  className="w-full h-24 border border-gray-300 rounded-lg px-4 py-2 text-sm outline-none focus:border-[#0079d3] resize-none"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">截止日期</label>
+                <input
+                  type="date"
+                  value={date}
+                  onChange={e => setDate(e.target.value)}
+                  className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm outline-none focus:border-[#0079d3]"
+                />
+              </div>
+              <div className="flex justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowCreate(false)}
+                  className="reddit-btn-outline"
+                >
+                  取消
+                </button>
+                <button type="submit" className="reddit-btn">
+                  创建
+                </button>
+              </div>
+            </form>
           </div>
-        </form>
+        </div>
       )}
 
-      <div className="space-y-6">
-        {events.map(event => {
-          const myVote = event.votes.find(v => v.userId === currentUser.id);
-          const yesCount = event.votes.filter(v => v.choice === 1).length;
-          const noCount = event.votes.filter(v => v.choice === 0).length;
-          const total = event.votes.length || 1;
+      {/* Events List */}
+      {events.map(event => {
+        const myVote = event.votes.find(v => v.userId === currentUser.id);
+        const yesCount = event.votes.filter(v => v.choice === 1).length;
+        const noCount = event.votes.filter(v => v.choice === 0).length;
+        const total = event.votes.length || 1;
 
-          return (
-            <div key={event.id} className="glass-card p-6 rounded-3xl border-t border-white/10">
-              <div className="flex justify-between items-start mb-4">
-                <span className={`px-3 py-1 rounded-full text-xs font-bold ${event.status === 'active' ? 'bg-cyan-500/20 text-cyan-400' : 'bg-zinc-800 text-zinc-500'}`}>
-                  {event.status === 'active' ? '进行中' : '已结算'}
-                </span>
-                <span className="text-zinc-500 text-xs">截止: {new Date(event.solveDate).toLocaleDateString()}</span>
+        return (
+          <div key={event.id} className="reddit-card p-4">
+            <div className="flex items-start justify-between mb-3">
+              <span className={`px-2 py-0.5 rounded text-xs font-semibold ${
+                event.status === 'active'
+                  ? 'bg-green-100 text-green-700'
+                  : 'bg-gray-100 text-gray-600'
+              }`}>
+                {event.status === 'active' ? '进行中' : '已结算'}
+              </span>
+              <span className="text-xs text-gray-500 flex items-center gap-1">
+                <Calendar size={12} />
+                截止: {new Date(event.solveDate).toLocaleDateString()}
+              </span>
+            </div>
+
+            <h3 className="text-lg font-semibold text-gray-800 mb-2">{event.title}</h3>
+            <p className="text-sm text-gray-600 mb-4">{event.description}</p>
+
+            {/* Progress Bar */}
+            <div className="mb-4">
+              <div className="flex justify-between text-xs text-gray-500 mb-1">
+                <span>Yes ({Math.round((yesCount/total)*100)}%)</span>
+                <span>No ({Math.round((noCount/total)*100)}%)</span>
               </div>
-
-              <h3 className="text-xl font-bold mb-2 text-white">{event.title}</h3>
-              <p className="text-zinc-400 text-sm mb-6">{event.description}</p>
-
-              <div className="space-y-3 mb-6">
-                <div className="flex justify-between text-xs text-zinc-500 mb-1">
-                  <span>Yes ({Math.round((yesCount/total)*100)}%)</span>
-                  <span>No ({Math.round((noCount/total)*100)}%)</span>
-                </div>
-                <div className="h-3 bg-zinc-800 rounded-full overflow-hidden flex">
-                  <div className="bg-cyan-500 transition-all duration-1000" style={{ width: `${(yesCount/total)*100}%` }} />
-                  <div className="bg-rose-500 transition-all duration-1000" style={{ width: `${(noCount/total)*100}%` }} />
-                </div>
+              <div className="h-2 bg-gray-200 rounded-full overflow-hidden flex">
+                <div
+                  className="bg-[#ff4500] transition-all duration-500"
+                  style={{ width: `${(yesCount/total)*100}%` }}
+                />
+                <div
+                  className="bg-[#0079d3] transition-all duration-500"
+                  style={{ width: `${(noCount/total)*100}%` }}
+                />
               </div>
+            </div>
 
-              <div className="flex gap-4">
-                {event.status === 'active' ? (
-                  <>
-                    <button
-                      onClick={() => onVote(event.id, 1)}
-                      className={`flex-1 py-3 rounded-xl font-bold transition-all ${myVote?.choice === 1 ? 'bg-cyan-500 text-white monolith-glow' : 'bg-cyan-500/10 text-cyan-500 border border-cyan-500/30 hover:bg-cyan-500/20'}`}
-                    >
-                      Yes / 1
-                    </button>
-                    <button
-                      onClick={() => onVote(event.id, 0)}
-                      className={`flex-1 py-3 rounded-xl font-bold transition-all ${myVote?.choice === 0 ? 'bg-rose-500 text-white monolith-glow' : 'bg-rose-500/10 text-rose-500 border border-rose-500/30 hover:bg-rose-500/20'}`}
-                    >
-                      No / 0
-                    </button>
-                  </>
-                ) : (
-                  <div className="w-full p-4 rounded-xl bg-white/5 border border-white/10 flex items-center justify-between">
-                    <span className="text-zinc-400">结果: </span>
-                    <span className={`font-black text-xl ${event.finalResult === 1 ? 'text-cyan-400' : 'text-rose-400'}`}>
-                      {event.finalResult === 1 ? 'YES / 1' : 'NO / 0'}
+            {/* Voting Buttons */}
+            <div className="flex gap-3">
+              {event.status === 'active' ? (
+                <>
+                  <button
+                    onClick={() => onVote(event.id, 1)}
+                    className={`flex-1 py-2 rounded-full text-sm font-semibold transition-all ${
+                      myVote?.choice === 1
+                        ? 'bg-[#ff4500] text-white'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    Yes
+                  </button>
+                  <button
+                    onClick={() => onVote(event.id, 0)}
+                    className={`flex-1 py-2 rounded-full text-sm font-semibold transition-all ${
+                      myVote?.choice === 0
+                        ? 'bg-[#0079d3] text-white'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    No
+                  </button>
+                </>
+              ) : (
+                <div className="w-full py-3 px-4 bg-gray-100 rounded-lg flex items-center justify-between">
+                  <span className="text-gray-600">结果:</span>
+                  <span className={`font-bold ${event.finalResult === 1 ? 'text-[#ff4500]' : 'text-[#0079d3]'}`}>
+                    {event.finalResult === 1 ? 'YES' : 'NO'}
+                  </span>
+                  {myVote && (
+                    <span className={`text-xs px-2 py-1 rounded ${
+                      myVote.choice === event.finalResult
+                        ? 'bg-green-100 text-green-700'
+                        : 'bg-gray-200 text-gray-600'
+                    }`}>
+                      {myVote.choice === event.finalResult ? '猜中 +1' : '落败'}
                     </span>
-                    {myVote && (
-                      <span className={`text-xs px-2 py-1 rounded ${myVote.choice === event.finalResult ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
-                        {myVote.choice === event.finalResult ? '猜中 +1' : '落败'}
-                      </span>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              {event.creatorId === currentUser.id && event.status === 'active' && (
-                <div className="mt-6 pt-6 border-t border-white/5 flex gap-2 overflow-x-auto">
-                  <p className="text-xs text-zinc-500 whitespace-nowrap self-center mr-2">发布者工具:</p>
-                  <button onClick={() => onSolve(event.id, 1)} className="text-xs px-3 py-1 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-zinc-300">结算为 Yes</button>
-                  <button onClick={() => onSolve(event.id, 0)} className="text-xs px-3 py-1 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-zinc-300">结算为 No</button>
+                  )}
                 </div>
               )}
             </div>
-          );
-        })}
-      </div>
+
+            {/* Creator Tools */}
+            {event.creatorId === currentUser.id && event.status === 'active' && (
+              <div className="mt-4 pt-4 border-t border-gray-200 flex items-center gap-2">
+                <p className="text-xs text-gray-500 mr-2">发布者工具:</p>
+                <button
+                  onClick={() => onSolve(event.id, 1)}
+                  className="text-xs px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded text-gray-700"
+                >
+                  结算为 Yes
+                </button>
+                <button
+                  onClick={() => onSolve(event.id, 0)}
+                  className="text-xs px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded text-gray-700"
+                >
+                  结算为 No
+                </button>
+              </div>
+            )}
+          </div>
+        );
+      })}
+
+      {events.length === 0 && (
+        <div className="reddit-card p-8 text-center">
+          <TrendingUp size={40} className="mx-auto text-gray-400 mb-4" />
+          <p className="text-gray-600">还没有预测事件</p>
+          <p className="text-sm text-gray-500 mt-1">点击上方按钮创建第一个预测</p>
+        </div>
+      )}
     </div>
   );
 };
 
+// Profile View - Reddit style
 const ProfileView = ({ user, posts, participatedEvents }: { user: AppUser, posts: Post[], participatedEvents: PredictionEvent[] }) => {
+  const [activeTab, setActiveTab] = useState<'posts' | 'predictions'>('posts');
+
   return (
-    <div className="space-y-12 animate-in fade-in duration-700">
-      <header className="text-center cosmic-gradient p-12 rounded-[3rem] monolith-glow mb-12 border border-white/10">
-        <img src={user.avatar} className="w-24 h-24 rounded-full mx-auto mb-4 border-4 border-white/20 monolith-glow object-cover" alt="" />
-        <h2 className="text-4xl font-black text-white mb-2">{user.name}</h2>
-        <div className="flex justify-center gap-8 mt-6">
-          <div className="text-center">
-            <p className="text-zinc-500 text-xs uppercase tracking-widest">Points</p>
-            <p className="text-3xl font-black text-amber-400">{user.points}</p>
+    <div className="max-w-2xl">
+      {/* Profile Header Card */}
+      <div className="reddit-card overflow-hidden mb-4">
+        {/* Banner */}
+        <div className="h-20 bg-gradient-to-r from-[#ff4500] to-[#ff6a33]"></div>
+
+        {/* Profile Info */}
+        <div className="p-4 pt-0 relative">
+          <img
+            src={user.avatar}
+            className="w-20 h-20 rounded-full border-4 border-white absolute -top-10 object-cover"
+            alt=""
+          />
+          <div className="pt-12">
+            <h2 className="text-xl font-bold text-gray-800">{user.name}</h2>
+            <p className="text-sm text-gray-500">u/{user.name.toLowerCase().replace(/\s/g, '_')}</p>
           </div>
-          <div className="text-center">
-            <p className="text-zinc-500 text-xs uppercase tracking-widest">Posts</p>
-            <p className="text-3xl font-black text-cyan-400">{posts.length}</p>
-          </div>
-          <div className="text-center">
-            <p className="text-zinc-500 text-xs uppercase tracking-widest">Bets</p>
-            <p className="text-3xl font-black text-purple-400">{participatedEvents.length}</p>
+
+          {/* Stats */}
+          <div className="flex gap-6 mt-4 pt-4 border-t border-gray-200">
+            <div className="text-center">
+              <p className="text-lg font-bold text-gray-800">{user.points}</p>
+              <p className="text-xs text-gray-500">积分</p>
+            </div>
+            <div className="text-center">
+              <p className="text-lg font-bold text-gray-800">{posts.length}</p>
+              <p className="text-xs text-gray-500">帖子</p>
+            </div>
+            <div className="text-center">
+              <p className="text-lg font-bold text-gray-800">{participatedEvents.length}</p>
+              <p className="text-xs text-gray-500">预测</p>
+            </div>
           </div>
         </div>
-      </header>
+      </div>
 
-      <section>
-        <h3 className="text-2xl font-bold mb-6 flex items-center gap-2 text-white">
-          <MessageSquare className="text-cyan-500" /> 我的想法 ({posts.length})
-        </h3>
-        <div className="grid gap-4">
+      {/* Tabs */}
+      <div className="reddit-card mb-4">
+        <div className="flex border-b border-gray-200">
+          <button
+            onClick={() => setActiveTab('posts')}
+            className={`flex-1 py-3 text-sm font-semibold transition-colors ${
+              activeTab === 'posts'
+                ? 'text-[#ff4500] border-b-2 border-[#ff4500]'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            我的帖子
+          </button>
+          <button
+            onClick={() => setActiveTab('predictions')}
+            className={`flex-1 py-3 text-sm font-semibold transition-colors ${
+              activeTab === 'predictions'
+                ? 'text-[#ff4500] border-b-2 border-[#ff4500]'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            参与的预测
+          </button>
+        </div>
+      </div>
+
+      {/* Tab Content */}
+      {activeTab === 'posts' ? (
+        <div className="space-y-3">
           {posts.map(post => (
-            <div key={post.id} className="glass-card p-6 rounded-2xl border-l-2 border-cyan-500/30">
-              <p className="text-xs text-zinc-500 mb-2">{post.dateStr}</p>
-              <p className="text-zinc-300 whitespace-pre-wrap">{post.content}</p>
+            <div key={post.id} className="reddit-card p-4">
+              <p className="text-xs text-gray-500 mb-2 flex items-center gap-1">
+                <Clock size={12} />
+                {post.dateStr}
+              </p>
+              <p className="text-gray-800 text-sm whitespace-pre-wrap">{post.content}</p>
             </div>
           ))}
-          {posts.length === 0 && <p className="text-zinc-600 italic">还没有发布过想法</p>}
+          {posts.length === 0 && (
+            <div className="reddit-card p-8 text-center text-gray-500">
+              还没有发布过帖子
+            </div>
+          )}
         </div>
-      </section>
-
-      <section>
-        <h3 className="text-2xl font-bold mb-6 flex items-center gap-2 text-white">
-          <TrendingUp className="text-purple-500" /> 参与的赌约
-        </h3>
-        <div className="grid gap-4">
+      ) : (
+        <div className="space-y-3">
           {participatedEvents.map(ev => (
-            <div key={ev.id} className="glass-card p-4 rounded-2xl flex justify-between items-center border-l-2 border-purple-500/30">
+            <div key={ev.id} className="reddit-card p-4 flex items-center justify-between">
               <div>
-                <h4 className="font-bold text-zinc-200">{ev.title}</h4>
-                <p className="text-xs text-zinc-500">
-                  我的投票: <span className={ev.votes.find(v => v.userId === user.id)?.choice === 1 ? 'text-cyan-400' : 'text-rose-400'}>
+                <h4 className="font-semibold text-gray-800">{ev.title}</h4>
+                <p className="text-xs text-gray-500 mt-1">
+                  我的投票:
+                  <span className={`ml-1 font-semibold ${
+                    ev.votes.find(v => v.userId === user.id)?.choice === 1
+                      ? 'text-[#ff4500]'
+                      : 'text-[#0079d3]'
+                  }`}>
                     {ev.votes.find(v => v.userId === user.id)?.choice === 1 ? 'YES' : 'NO'}
                   </span>
                 </p>
               </div>
-              <div className="text-right">
+              <div>
                 {ev.status === 'active' ? (
-                  <span className="text-xs text-amber-500 bg-amber-500/10 px-2 py-1 rounded">进行中</span>
+                  <span className="text-xs px-2 py-1 bg-yellow-100 text-yellow-700 rounded">进行中</span>
                 ) : (
-                  <span className={`text-xs px-2 py-1 rounded ${ev.votes.find(v => v.userId === user.id)?.choice === ev.finalResult ? 'text-green-400 bg-green-400/10' : 'text-zinc-500 bg-zinc-800'}`}>
+                  <span className={`text-xs px-2 py-1 rounded ${
+                    ev.votes.find(v => v.userId === user.id)?.choice === ev.finalResult
+                      ? 'bg-green-100 text-green-700'
+                      : 'bg-gray-100 text-gray-600'
+                  }`}>
                     {ev.votes.find(v => v.userId === user.id)?.choice === ev.finalResult ? '猜中 +1' : '已结算'}
                   </span>
                 )}
               </div>
             </div>
           ))}
-          {participatedEvents.length === 0 && <p className="text-zinc-600 italic">还没有参与过预测</p>}
+          {participatedEvents.length === 0 && (
+            <div className="reddit-card p-8 text-center text-gray-500">
+              还没有参与过预测
+            </div>
+          )}
         </div>
-      </section>
+      )}
     </div>
   );
 };

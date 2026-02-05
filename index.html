@@ -4,26 +4,90 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Monolith 饭否</title>
+    <title>投研中台 - Research Hub</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --reddit-orange: #ff4500;
+            --reddit-blue: #0079d3;
+            --reddit-lightblue: #24a0ed;
+            --bg-primary: #dae0e6;
+            --bg-secondary: #ffffff;
+            --text-primary: #1c1c1c;
+            --text-secondary: #7c7c7c;
+            --border-color: #ccc;
+        }
         body {
-            font-family: 'Inter', 'Noto Sans SC', sans-serif;
-            background-color: #000;
-            color: #fff;
+            font-family: 'IBM Plex Sans', 'Noto Sans SC', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
             margin: 0;
         }
-        .monolith-glow {
-            box-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
+        .reddit-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
         }
-        .glass-card {
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+        .reddit-card:hover {
+            border-color: #898989;
         }
-        .cosmic-gradient {
-            background: linear-gradient(135deg, #000428 0%, #004e92 100%);
+        .vote-column {
+            background: #f8f9fa;
+            border-right: 1px solid #edeff1;
+        }
+        .reddit-btn {
+            background: var(--reddit-blue);
+            color: white;
+            border-radius: 9999px;
+            padding: 8px 16px;
+            font-weight: 600;
+            transition: background 0.2s;
+        }
+        .reddit-btn:hover {
+            background: #006cbd;
+        }
+        .reddit-btn-outline {
+            background: transparent;
+            color: var(--reddit-blue);
+            border: 1px solid var(--reddit-blue);
+            border-radius: 9999px;
+            padding: 8px 16px;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        .reddit-btn-outline:hover {
+            background: rgba(0, 121, 211, 0.1);
+        }
+        .upvote:hover { color: var(--reddit-orange); }
+        .downvote:hover { color: var(--reddit-blue); }
+        .sidebar-link {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 24px;
+            color: var(--text-primary);
+            font-size: 14px;
+            font-weight: 500;
+            transition: background 0.15s;
+        }
+        .sidebar-link:hover {
+            background: #e8e8e8;
+        }
+        .sidebar-link.active {
+            background: #e8e8e8;
+            font-weight: 600;
+            border-left: 3px solid var(--reddit-orange);
+        }
+        .header-search {
+            background: #f6f7f8;
+            border: 1px solid #edeff1;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+        .header-search:hover, .header-search:focus-within {
+            background: white;
+            border-color: var(--reddit-blue);
         }
     </style>
 <script type="importmap">
@@ -37,7 +101,7 @@
 }
 </script>
 </head>
-<body class="bg-black text-slate-200 min-h-screen">
+<body class="min-h-screen">
     <div id="root"></div>
     <script type="module" src="/index.tsx"></script>
 </body>
