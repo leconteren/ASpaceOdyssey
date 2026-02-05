@@ -1,9 +1,10 @@
 
 const getApiKey = (): string => {
   // Vite exposes env vars via import.meta.env with VITE_ prefix
+  // 注意：不能使用可选链 ?. 因为 vite.config.ts 中的 define 是精确字符串替换
   return (
-    (import.meta.env?.VITE_GEMINI_API_KEY as string) ||
-    (import.meta.env?.GEMINI_API_KEY as string) ||
+    (import.meta.env.VITE_GEMINI_API_KEY as string) ||
+    (import.meta.env.GEMINI_API_KEY as string) ||
     ''
   );
 };
