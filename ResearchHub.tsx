@@ -3,10 +3,12 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   Building2, LineChart, Database, Users, Lightbulb, Shield,
   Send, Trash2, Zap, Bot, ChevronRight, Loader2,
-  Sparkles, ArrowLeft, CheckCircle2, AlertCircle
+  Sparkles, ArrowLeft, CheckCircle2, AlertCircle,
+  TrendingUp, X, Search, BarChart3
 } from 'lucide-react';
 import { Orchestrator, AGENT_CONFIGS, ALL_AGENT_IDS } from './agents/index';
 import { AgentId, AgentMessage } from './agents/types';
+import { TradingViewChart, TradingViewMiniChart, TradingViewTechnicalAnalysis } from './components/TradingViewChart';
 
 const ICON_MAP: Record<string, React.FC<{ size?: number; className?: string }>> = {
   Building2, LineChart, Database, Users, Lightbulb, Shield,
@@ -48,6 +50,12 @@ export default function ResearchHub() {
   const [multiAgents, setMultiAgents] = useState<AgentId[]>([]);
   const [multiStatus, setMultiStatus] = useState<MultiAgentStatus[]>([]);
   const [multiRunning, setMultiRunning] = useState(false);
+
+  // Chart panel state
+  const [showChart, setShowChart] = useState(false);
+  const [chartSymbol, setChartSymbol] = useState('NVDA');
+  const [chartInput, setChartInput] = useState('');
+  const [chartView, setChartView] = useState<'chart' | 'technical'>('chart');
 
   const chatEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -165,19 +173,134 @@ export default function ResearchHub() {
 
   // ==================== RENDER ====================
 
+  // Chart Panel Component
+  const ChartPanel = () => (
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden shadow-2xl">
+        {/* Header */}
+        <div className="flex items-center justify-between p-4 border-b border-gray-200">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-emerald-500 rounded-lg flex items-center justify-center">
+              <TrendingUp className="text-white" size={20} />
+            </div>
+            <div>
+              <h3 className="font-bold text-gray-800">行情图表</h3>
+              <p className="text-xs text-gray-500">TradingView 实时数据</p>
+            </div>
+          </div>
+          <button
+            onClick={() => setShowChart(false)}
+            className="p-2 hover:bg-gray-100 rounded-lg text-gray-500"
+          >
+            <X size={20} />
+          </button>
+        </div>
+
+        {/* Symbol Search */}
+        <div className="p-4 border-b border-gray-100 bg-gray-50">
+          <div className="flex gap-3">
+            <div className="flex-1 flex items-center gap-2 bg-white border border-gray-200 rounded-lg px-3 py-2">
+              <Search size={16} className="text-gray-400" />
+              <input
+                type="text"
+                value={chartInput}
+                onChange={e => setChartInput(e.target.value.toUpperCase())}
+                onKeyDown={e => {
+                  if (e.key === 'Enter' && chartInput.trim()) {
+                    setChartSymbol(chartInput.trim());
+                  }
+                }}
+                placeholder="输入股票代码 (如 NVDA, AAPL, TSLA)"
+                className="flex-1 outline-none text-sm text-gray-800"
+              />
+            </div>
+            <button
+              onClick={() => chartInput.trim() && setChartSymbol(chartInput.trim())}
+              className="px-4 py-2 bg-[#0079d3] text-white rounded-lg text-sm font-medium hover:bg-[#006cbd]"
+            >
+              查看
+            </button>
+          </div>
+          <div className="flex gap-2 mt-3">
+            {['NVDA', 'AAPL', 'TSLA', 'MSFT', 'AMD', 'GOOGL'].map(s => (
+              <button
+                key={s}
+                onClick={() => { setChartSymbol(s); setChartInput(s); }}
+                className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${
+                  chartSymbol === s
+                    ? 'bg-[#0079d3] text-white'
+                    : 'bg-white border border-gray-200 text-gray-600 hover:border-gray-400'
+                }`}
+              >
+                {s}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* View Toggle */}
+        <div className="flex border-b border-gray-200">
+          <button
+            onClick={() => setChartView('chart')}
+            className={`flex-1 py-3 text-sm font-medium flex items-center justify-center gap-2 ${
+              chartView === 'chart'
+                ? 'text-[#0079d3] border-b-2 border-[#0079d3]'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            <TrendingUp size={16} />
+            K线图表
+          </button>
+          <button
+            onClick={() => setChartView('technical')}
+            className={`flex-1 py-3 text-sm font-medium flex items-center justify-center gap-2 ${
+              chartView === 'technical'
+                ? 'text-[#0079d3] border-b-2 border-[#0079d3]'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            <BarChart3 size={16} />
+            技术分析
+          </button>
+        </div>
+
+        {/* Chart Content */}
+        <div className="h-[500px]">
+          {chartView === 'chart' ? (
+            <TradingViewChart symbol={chartSymbol} height={500} />
+          ) : (
+            <TradingViewTechnicalAnalysis symbol={chartSymbol} height={500} />
+          )}
+        </div>
+      </div>
+    </div>
+  );
+
   if (mode === 'select') {
     return (
       <div className="max-w-4xl">
+        {/* Chart Panel Modal */}
+        {showChart && <ChartPanel />}
+
         {/* Header */}
         <div className="reddit-card p-4 mb-4">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 bg-[#ff4500] rounded-lg flex items-center justify-center">
-              <Sparkles className="text-white" size={22} />
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-[#ff4500] rounded-lg flex items-center justify-center">
+                <Sparkles className="text-white" size={22} />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-gray-800">AI 研究中心</h2>
+                <p className="text-sm text-gray-500">Multi-Agent Investment Research Platform</p>
+              </div>
             </div>
-            <div>
-              <h2 className="text-xl font-bold text-gray-800">AI 研究中心</h2>
-              <p className="text-sm text-gray-500">Multi-Agent Investment Research Platform</p>
-            </div>
+            <button
+              onClick={() => setShowChart(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-600 rounded-lg hover:bg-emerald-100 transition-all"
+            >
+              <TrendingUp size={18} />
+              <span className="font-medium text-sm">行情图表</span>
+            </button>
           </div>
         </div>
 
@@ -252,22 +375,34 @@ export default function ResearchHub() {
   if (mode === 'multi') {
     return (
       <div className="max-w-4xl">
+        {/* Chart Panel Modal */}
+        {showChart && <ChartPanel />}
+
         {/* Header */}
         <div className="reddit-card p-4 mb-4">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setMode('select')}
+                className="p-2 hover:bg-gray-100 rounded-lg text-gray-500 transition-colors"
+              >
+                <ArrowLeft size={20} />
+              </button>
+              <div className="w-10 h-10 bg-amber-500 rounded-lg flex items-center justify-center">
+                <Zap className="text-white" size={22} />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-gray-800">多Agent协同分析</h2>
+                <p className="text-sm text-gray-500">选择Agent组合，一键调度多维分析</p>
+              </div>
+            </div>
             <button
-              onClick={() => setMode('select')}
-              className="p-2 hover:bg-gray-100 rounded-lg text-gray-500 transition-colors"
+              onClick={() => setShowChart(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-600 rounded-lg hover:bg-emerald-100 transition-all"
             >
-              <ArrowLeft size={20} />
+              <TrendingUp size={18} />
+              <span className="font-medium text-sm">行情图表</span>
             </button>
-            <div className="w-10 h-10 bg-amber-500 rounded-lg flex items-center justify-center">
-              <Zap className="text-white" size={22} />
-            </div>
-            <div>
-              <h2 className="text-xl font-bold text-gray-800">多Agent协同分析</h2>
-              <p className="text-sm text-gray-500">选择Agent组合，一键调度多维分析</p>
-            </div>
           </div>
         </div>
 
@@ -409,6 +544,9 @@ export default function ResearchHub() {
 
   return (
     <div className="max-w-2xl flex flex-col h-[calc(100vh-6rem)]">
+      {/* Chart Panel Modal */}
+      {showChart && <ChartPanel />}
+
       {/* Header */}
       <div className="reddit-card p-3 mb-4 shrink-0">
         <div className="flex items-center gap-3">
@@ -430,6 +568,13 @@ export default function ResearchHub() {
             </div>
           )}
           <div className="flex gap-1">
+            <button
+              onClick={() => setShowChart(true)}
+              className="p-2 hover:bg-emerald-50 rounded-lg text-emerald-600 transition-colors"
+              title="行情图表"
+            >
+              <TrendingUp size={16} />
+            </button>
             <button
               onClick={() => setMode('multi')}
               className="p-2 hover:bg-gray-100 rounded-lg text-gray-500 transition-colors"
