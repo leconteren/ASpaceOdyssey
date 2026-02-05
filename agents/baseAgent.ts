@@ -53,6 +53,20 @@ async function getHistoricalData(ticker: string): Promise<string | null> {
   }
 }
 
+// 获取技术指标数据 (布林带、多周期涨跌幅)
+async function getTechnicalData(ticker: string): Promise<string | null> {
+  try {
+    const data = await yahooFinance.getTechnicalData(ticker);
+    if (data) {
+      return yahooFinance.formatTechnicalDataForAI(data);
+    }
+    return null;
+  } catch (err) {
+    console.warn(`Technical data fetch failed for ${ticker}:`, err);
+    return null;
+  }
+}
+
 // 获取新闻数据
 async function getNewsData(ticker: string): Promise<string | null> {
   try {
@@ -81,8 +95,14 @@ async function enrichMessage(message: string, agentId: string): Promise<string> 
   const ticker = tickers[0];
   const dataParts: string[] = [];
 
-  // 所有分析相关的 Agent 都获取 Yahoo Finance 实时数据
-  if (['fundamental', 'technical', 'committee', 'dataTracking'].includes(agentId)) {
+  // 技术分析 Agent 专用数据 (布林带、多周期涨跌幅)
+  if (agentId === 'technical') {
+    const technicalData = await getTechnicalData(ticker);
+    if (technicalData) dataParts.push(technicalData);
+  }
+
+  // 基本面相关 Agent 获取 Yahoo Finance 实时数据和历史数据
+  if (['fundamental', 'committee', 'dataTracking'].includes(agentId)) {
     const yahooData = await getYahooData(ticker);
     if (yahooData) dataParts.push(yahooData);
 

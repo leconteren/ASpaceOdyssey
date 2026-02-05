@@ -254,9 +254,135 @@ export function formatHistoricalDataForAI(data: HistoricalData): string {
 *数据来源: Yahoo Finance 历史数据*`;
 }
 
+/**
+ * 技术指标数据类型
+ */
+export interface TechnicalData {
+  symbol: string;
+  currentPrice: number;
+  previousClose: number;
+  performance: {
+    '1d': number | null;
+    '1w': number | null;
+    '1m': number | null;
+    '3m': number | null;
+    '1y': number | null;
+    'ytd': number | null;
+  };
+  bollingerBands: {
+    daily: {
+      upper: number;
+      middle: number;
+      lower: number;
+      position: number;
+    };
+    weekly: {
+      upper: number;
+      middle: number;
+      lower: number;
+      position: number;
+    };
+  };
+  alerts: string[];
+  timestamp: number;
+}
+
+/**
+ * 获取技术指标数据 - 通过 Vercel API 路由
+ */
+export async function getTechnicalData(symbol: string): Promise<TechnicalData | null> {
+  try {
+    const url = `/api/technical?symbol=${encodeURIComponent(symbol)}`;
+
+    const response = await fetch(url, {
+      headers: {
+        'Accept': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || `API error: ${response.status}`);
+    }
+
+    return await response.json();
+  } catch (err) {
+    console.error(`Technical data fetch error for ${symbol}:`, err);
+    return null;
+  }
+}
+
+/**
+ * 格式化技术指标数据为 AI 可读文本
+ */
+export function formatTechnicalDataForAI(data: TechnicalData): string {
+  if (!data) return '无法获取技术指标数据';
+
+  const formatNum = (n: number | null | undefined, decimals = 2) =>
+    n !== null && n !== undefined && !isNaN(n) ? n.toFixed(decimals) : 'N/A';
+
+  const formatPct = (n: number | null | undefined) => {
+    if (n === null || n === undefined || isNaN(n)) return 'N/A';
+    const sign = n >= 0 ? '+' : '';
+    return `${sign}${n.toFixed(2)}%`;
+  };
+
+  const getBBStatus = (position: number): string => {
+    if (position > 95) return '触及上轨 (极度超买)';
+    if (position > 80) return '接近上轨 (超买)';
+    if (position > 60) return '上半区';
+    if (position > 40) return '中轨附近';
+    if (position > 20) return '下半区';
+    if (position > 5) return '接近下轨 (超卖)';
+    return '触及下轨 (极度超卖)';
+  };
+
+  let alertText = '';
+  if (data.alerts && data.alerts.length > 0) {
+    alertText = `\n### 技术警报\n${data.alerts.map(a => `- ${a}`).join('\n')}`;
+  }
+
+  return `## ${data.symbol} 技术分析数据
+
+### 实时价格
+- **当前价格**: $${formatNum(data.currentPrice)}
+- **昨收**: $${formatNum(data.previousClose)}
+- **日涨跌**: ${formatPct(data.performance['1d'])}
+
+### 多周期涨跌幅
+| 周期 | 涨跌幅 |
+|------|--------|
+| 1日 | ${formatPct(data.performance['1d'])} |
+| 1周 | ${formatPct(data.performance['1w'])} |
+| 1月 | ${formatPct(data.performance['1m'])} |
+| 3月 | ${formatPct(data.performance['3m'])} |
+| 1年 | ${formatPct(data.performance['1y'])} |
+| YTD | ${formatPct(data.performance['ytd'])} |
+
+### 布林带分析 (20日, 2倍标准差)
+
+**日线布林带:**
+- 上轨: $${formatNum(data.bollingerBands.daily.upper)}
+- 中轨: $${formatNum(data.bollingerBands.daily.middle)}
+- 下轨: $${formatNum(data.bollingerBands.daily.lower)}
+- 当前位置: ${formatNum(data.bollingerBands.daily.position, 0)}% (${getBBStatus(data.bollingerBands.daily.position)})
+
+**周线布林带:**
+- 上轨: $${formatNum(data.bollingerBands.weekly.upper)}
+- 中轨: $${formatNum(data.bollingerBands.weekly.middle)}
+- 下轨: $${formatNum(data.bollingerBands.weekly.lower)}
+- 当前位置: ${formatNum(data.bollingerBands.weekly.position, 0)}% (${getBBStatus(data.bollingerBands.weekly.position)})
+${alertText}
+
+---
+*数据来源: Yahoo Finance (实时计算)*`;
+}
+
 export default {
   getQuote,
   formatQuoteForAI,
   getHistoricalData,
   formatHistoricalDataForAI,
+  getTechnicalData,
+  formatTechnicalDataForAI,
 };
