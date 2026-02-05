@@ -3,7 +3,14 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://tfzfguypbaqcywqndcde.supabase.co';
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'sb_publishable_Y17UrzPVeXPs6LXkVExNeg_eMIM0U2a';
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    persistSession: true,           // 持久化 session
+    storageKey: 'research-hub-auth', // localStorage key
+    autoRefreshToken: true,         // 自动刷新 token
+    detectSessionInUrl: true,       // 支持 OAuth 回调
+  },
+});
 
 // Types for database
 export interface DbUser {
