@@ -30,28 +30,52 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        fetchProfile(session.user.id);
-      } else {
+    // Get initial session from localStorage
+    const initSession = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+
+        if (error) {
+          console.warn('Session restore error:', error);
+          setLoading(false);
+          return;
+        }
+
+        if (session?.user) {
+          setSession(session);
+          setUser(session.user);
+          await fetchProfile(session.user.id);
+        } else {
+          // 尝试刷新 session
+          const { data: refreshData } = await supabase.auth.refreshSession();
+          if (refreshData.session?.user) {
+            setSession(refreshData.session);
+            setUser(refreshData.session.user);
+            await fetchProfile(refreshData.session.user.id);
+          } else {
+            setLoading(false);
+          }
+        }
+      } catch (err) {
+        console.error('Auth init error:', err);
         setLoading(false);
       }
-    });
+    };
+
+    initSession();
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log('Auth state changed:', event);
         setSession(session);
         setUser(session?.user ?? null);
         if (session?.user) {
           await fetchProfile(session.user.id);
         } else {
           setProfile(null);
+          setLoading(false);
         }
-        setLoading(false);
       }
     );
 
