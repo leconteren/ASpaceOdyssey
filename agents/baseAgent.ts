@@ -39,6 +39,20 @@ async function getYahooData(ticker: string): Promise<string | null> {
   }
 }
 
+// 获取 Yahoo Finance 历史数据
+async function getHistoricalData(ticker: string): Promise<string | null> {
+  try {
+    const data = await yahooFinance.getHistoricalData(ticker, '3y', '1d');
+    if (data) {
+      return yahooFinance.formatHistoricalDataForAI(data);
+    }
+    return null;
+  } catch (err) {
+    console.warn(`Yahoo Finance historical data fetch failed for ${ticker}:`, err);
+    return null;
+  }
+}
+
 // 获取新闻数据
 async function getNewsData(ticker: string): Promise<string | null> {
   try {
@@ -71,6 +85,10 @@ async function enrichMessage(message: string, agentId: string): Promise<string> 
   if (['fundamental', 'technical', 'committee', 'dataTracking'].includes(agentId)) {
     const yahooData = await getYahooData(ticker);
     if (yahooData) dataParts.push(yahooData);
+
+    // 获取3年历史数据
+    const historicalData = await getHistoricalData(ticker);
+    if (historicalData) dataParts.push(historicalData);
   }
 
   // 新闻数据
