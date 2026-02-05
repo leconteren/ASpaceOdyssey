@@ -1,86 +1,40 @@
 
 import { AgentConfig, AgentMessage } from './types';
 import { callGemini, GeminiMessage } from './aiService';
-import { getFullCompanyData, formatCompanyDataForAI, getCompanyNews } from '../services/financeAPI';
-import alphaVantage from '../services/alphaVantage';
+import { getCompanyNews } from '../services/financeAPI';
+import yahooFinance from '../services/yahooFinance';
 
-// 检测消息中的股票 Ticker（美股格式：1-5个大写字母）
+// 检测消息中的股票 Ticker
 function extractTickers(text: string): string[] {
-  const tickerPattern = /\b([A-Z]{1,5})\b/g;
+  // 明确的 ticker 格式：$RDDT, 分析 AAPL, 研究TSLA
+  const explicitPattern = /(?:\$|分析|研究|看看|查一下)\s*([A-Z]{1,5})\b/gi;
+  const explicitMatches = [...text.matchAll(explicitPattern)].map(m => m[1].toUpperCase());
+  if (explicitMatches.length > 0) return [...new Set(explicitMatches)];
+
+  // 通用模式
+  const tickerPattern = /\b([A-Z]{2,5})\b/g;
   const matches = text.match(tickerPattern) || [];
 
   const excludeWords = new Set([
-    'I', 'A', 'THE', 'AND', 'OR', 'FOR', 'TO', 'IN', 'ON', 'AT', 'BY',
-    'CEO', 'CFO', 'COO', 'CTO', 'IPO', 'SEC', 'FDA', 'FTC', 'API', 'AI',
+    'THE', 'AND', 'FOR', 'CEO', 'CFO', 'COO', 'CTO', 'IPO', 'SEC', 'FDA', 'API', 'AI',
     'PE', 'PS', 'PB', 'EPS', 'ROE', 'ROA', 'FCF', 'DCF', 'TAM', 'CAGR',
     'US', 'USA', 'UK', 'EU', 'GDP', 'CPI', 'PMI', 'ETF', 'NYSE', 'NASDAQ',
-    'Q1', 'Q2', 'Q3', 'Q4', 'YOY', 'QOQ', 'MOM', 'YTD', 'TTM',
-    'BUY', 'SELL', 'HOLD', 'LONG', 'SHORT', 'CALL', 'PUT',
-    'RDDT', // 用户可能直接说 RDDT 但我们要检测
+    'YOY', 'QOQ', 'MOM', 'YTD', 'TTM', 'BUY', 'SELL', 'HOLD', 'LONG', 'SHORT',
   ]);
 
-  // 特殊处理：如果有明确的 ticker 格式（如 $RDDT 或 分析RDDT）则提取
-  const explicitTicker = text.match(/[$\s]([A-Z]{1,5})(?:\s|$|[,，。])/g);
-  if (explicitTicker) {
-    const explicit = explicitTicker.map(t => t.replace(/[$\s,，。]/g, '').trim()).filter(Boolean);
-    if (explicit.length > 0) return [...new Set(explicit)];
-  }
-
-  return [...new Set(matches.filter(t => !excludeWords.has(t) && t.length >= 2))];
+  return [...new Set(matches.filter(t => !excludeWords.has(t)))];
 }
 
-// 获取基本面数据
-async function getFundamentalData(ticker: string): Promise<string | null> {
+// 获取 Yahoo Finance 实时数据
+async function getYahooData(ticker: string): Promise<string | null> {
   try {
-    const data = await getFullCompanyData(ticker);
-    if (data.profile) {
-      return formatCompanyDataForAI(data);
+    const quote = await yahooFinance.getQuote(ticker);
+    if (quote) {
+      return yahooFinance.formatQuoteForAI(quote);
     }
     return null;
   } catch (err) {
-    console.warn(`FMP data fetch failed for ${ticker}:`, err);
-    return null;
-  }
-}
-
-// 获取技术分析数据
-async function getTechnicalData(ticker: string): Promise<string | null> {
-  try {
-    const [quote, rsi, macd] = await Promise.all([
-      alphaVantage.getQuote(ticker),
-      alphaVantage.getRSI(ticker),
-      alphaVantage.getMACD(ticker),
-    ]);
-
-    if (!quote) return null;
-
-    let text = `## ${ticker} 技术分析数据\n\n`;
-    text += `### 实时行情\n`;
-    text += `- 当前价格: $${quote.price}\n`;
-    text += `- 涨跌: ${quote.change} (${quote.changePercent})\n`;
-    text += `- 成交量: ${quote.volume?.toLocaleString()}\n`;
-    text += `- 最新交易日: ${quote.latestTradingDay}\n\n`;
-
-    if (rsi && rsi['Technical Analysis: RSI']) {
-      const rsiData = Object.entries(rsi['Technical Analysis: RSI']).slice(0, 5);
-      text += `### RSI (14日)\n`;
-      rsiData.forEach(([date, val]: [string, any]) => {
-        text += `- ${date}: ${parseFloat(val.RSI).toFixed(2)}\n`;
-      });
-      text += '\n';
-    }
-
-    if (macd && macd['Technical Analysis: MACD']) {
-      const macdData = Object.entries(macd['Technical Analysis: MACD']).slice(0, 3);
-      text += `### MACD\n`;
-      macdData.forEach(([date, val]: [string, any]) => {
-        text += `- ${date}: MACD=${parseFloat(val.MACD).toFixed(4)}, Signal=${parseFloat(val.MACD_Signal).toFixed(4)}, Hist=${parseFloat(val.MACD_Hist).toFixed(4)}\n`;
-      });
-    }
-
-    return text;
-  } catch (err) {
-    console.warn(`Alpha Vantage data fetch failed for ${ticker}:`, err);
+    console.warn(`Yahoo Finance data fetch failed for ${ticker}:`, err);
     return null;
   }
 }
@@ -110,20 +64,16 @@ async function enrichMessage(message: string, agentId: string): Promise<string> 
   const tickers = extractTickers(message);
   if (tickers.length === 0) return message;
 
-  const ticker = tickers[0]; // 主要处理第一个 ticker
+  const ticker = tickers[0];
   const dataParts: string[] = [];
 
-  // 根据不同的 Agent 获取不同的数据
-  if (['fundamental', 'committee', 'dataTracking'].includes(agentId)) {
-    const fundamental = await getFundamentalData(ticker);
-    if (fundamental) dataParts.push(fundamental);
+  // 所有分析相关的 Agent 都获取 Yahoo Finance 实时数据
+  if (['fundamental', 'technical', 'committee', 'dataTracking'].includes(agentId)) {
+    const yahooData = await getYahooData(ticker);
+    if (yahooData) dataParts.push(yahooData);
   }
 
-  if (['technical', 'committee'].includes(agentId)) {
-    const technical = await getTechnicalData(ticker);
-    if (technical) dataParts.push(technical);
-  }
-
+  // 新闻数据
   if (['ideaSourcing', 'committee', 'fundamental'].includes(agentId)) {
     const news = await getNewsData(ticker);
     if (news) dataParts.push(news);
@@ -139,7 +89,7 @@ async function enrichMessage(message: string, agentId: string): Promise<string> 
 ${dataParts.join('\n\n')}
 
 ---
-请基于以上实时数据进行分析。`;
+请基于以上实时数据进行深度分析。`;
 }
 
 export class BaseAgent {
