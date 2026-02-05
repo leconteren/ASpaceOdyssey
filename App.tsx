@@ -1,35 +1,40 @@
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { User, Post, PredictionEvent, ViewType, PredictionChoice } from './types';
+import React, { useState, useEffect } from 'react';
+import { Post, PredictionEvent, ViewType, PredictionChoice } from './types';
 import { INITIAL_USER, parseInitialPosts } from './constants';
-import { Plus, MessageSquare, TrendingUp, User as UserIcon, LogOut, Send, CheckCircle, Clock, Sparkles } from 'lucide-react';
+import { Plus, MessageSquare, TrendingUp, User as UserIcon, LogOut, Send, Clock, Sparkles, Loader2, Mail, Lock, UserPlus } from 'lucide-react';
 import ResearchHub from './ResearchHub';
+import { useAuth, UserProfile } from './lib/AuthContext';
 
 export default function App() {
-  const [currentUser, setCurrentUser] = useState<User | null>(() => {
-    const saved = localStorage.getItem('monolith_user');
-    return saved ? JSON.parse(saved) : null;
-  });
-  
+  const { user, profile, loading, signIn, signUp, signOut } = useAuth();
+
   const [activeView, setActiveView] = useState<ViewType>('feed');
   const [posts, setPosts] = useState<Post[]>([]);
   const [events, setEvents] = useState<PredictionEvent[]>([]);
-  const [inputName, setInputName] = useState('');
+
+  // Auth form state
+  const [authMode, setAuthMode] = useState<'login' | 'signup'>('login');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
+  const [authError, setAuthError] = useState('');
+  const [authLoading, setAuthLoading] = useState(false);
 
   // Initialize data
   useEffect(() => {
     const savedPosts = localStorage.getItem('monolith_posts');
     let loadedPosts: Post[] = savedPosts ? JSON.parse(savedPosts) : [];
-    
+
     // 始终确保初始内容存在
     const initial = parseInitialPosts(INITIAL_USER.id, INITIAL_USER.name);
     const currentIds = new Set(loadedPosts.map(p => p.id));
     const missingInitial = initial.filter(p => !currentIds.has(p.id));
-    
+
     if (missingInitial.length > 0) {
       loadedPosts = [...loadedPosts, ...missingInitial].sort((a, b) => b.timestamp - a.timestamp);
     }
-    
+
     setPosts(loadedPosts);
     localStorage.setItem('monolith_posts', JSON.stringify(loadedPosts));
 
@@ -48,35 +53,59 @@ export default function App() {
     if (events.length > 0) localStorage.setItem('monolith_events', JSON.stringify(events));
   }, [events]);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
-    const name = inputName.trim();
-    if (!name) return;
-    
-    // 如果名字是 Xiaohan，使用固定 ID 以关联初始内容
-    const isXiaohan = name.toLowerCase() === 'xiaohan';
-    const newUser: User = {
-      id: isXiaohan ? INITIAL_USER.id : `user_${Date.now()}`,
-      name: name,
-      avatar: `https://picsum.photos/seed/${name}/200`,
-      joinedAt: Date.now(),
-      points: 0
-    };
-    setCurrentUser(newUser);
-    localStorage.setItem('monolith_user', JSON.stringify(newUser));
+    setAuthError('');
+    setAuthLoading(true);
+
+    try {
+      if (authMode === 'login') {
+        const { error } = await signIn(email, password);
+        if (error) {
+          setAuthError(error.message || '登录失败，请检查邮箱和密码');
+        }
+      } else {
+        if (!name.trim()) {
+          setAuthError('请输入姓名');
+          setAuthLoading(false);
+          return;
+        }
+        const { error } = await signUp(email, password, name);
+        if (error) {
+          setAuthError(error.message || '注册失败，请重试');
+        } else {
+          setAuthError('');
+          // Show success message - Supabase may require email confirmation
+          setAuthMode('login');
+          alert('注册成功！如果需要邮箱验证，请查收验证邮件。');
+        }
+      }
+    } catch (err: any) {
+      setAuthError(err.message || '发生错误');
+    } finally {
+      setAuthLoading(false);
+    }
   };
 
-  const handleLogout = () => {
-    setCurrentUser(null);
-    localStorage.removeItem('monolith_user');
+  const handleLogout = async () => {
+    await signOut();
   };
+
+  // Convert profile to User format for compatibility
+  const currentUser = profile ? {
+    id: profile.id,
+    name: profile.name,
+    avatar: profile.avatar_url,
+    joinedAt: new Date(profile.created_at).getTime(),
+    points: profile.points,
+  } : null;
 
   const createPost = (rawContent: string) => {
     if (!currentUser) return;
-    
+
     const dateRegex = /\d{4}-\d{2}-\d{2}/;
     const newPosts: Post[] = [];
-    
+
     if (dateRegex.test(rawContent)) {
       const parts = rawContent.split(/(\d{4}-\d{2}-\d{2})/);
       for (let i = 1; i < parts.length; i += 2) {
@@ -160,7 +189,20 @@ export default function App() {
     return acc;
   }, 0);
 
-  if (!currentUser) {
+  // Loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center cosmic-gradient">
+        <div className="text-center">
+          <Loader2 className="w-12 h-12 animate-spin text-cyan-400 mx-auto mb-4" />
+          <p className="text-slate-400">加载中...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Auth screen
+  if (!user || !profile) {
     return (
       <div className="min-h-screen flex items-center justify-center cosmic-gradient p-4">
         <div className="glass-card p-8 rounded-3xl w-full max-w-md monolith-glow">
@@ -170,24 +212,97 @@ export default function App() {
             </h1>
             <p className="text-slate-400 italic">Stay Different, Stay Weird</p>
           </div>
-          <form onSubmit={handleLogin} className="space-y-6">
+
+          {/* Auth Mode Toggle */}
+          <div className="flex mb-6 bg-white/5 rounded-xl p-1">
+            <button
+              onClick={() => { setAuthMode('login'); setAuthError(''); }}
+              className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${
+                authMode === 'login' ? 'bg-cyan-600 text-white' : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              登录
+            </button>
+            <button
+              onClick={() => { setAuthMode('signup'); setAuthError(''); }}
+              className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${
+                authMode === 'signup' ? 'bg-purple-600 text-white' : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              注册
+            </button>
+          </div>
+
+          <form onSubmit={handleAuth} className="space-y-4">
+            {authMode === 'signup' && (
+              <div>
+                <label className="block text-sm font-medium mb-2 text-slate-300">
+                  <UserPlus size={14} className="inline mr-2" />
+                  姓名
+                </label>
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="你的名字..."
+                  className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 focus:border-cyan-500 outline-none transition-all text-white placeholder-slate-500"
+                />
+              </div>
+            )}
             <div>
-              <label className="block text-sm font-medium mb-2 text-slate-300">姓名 / Alias</label>
-              <input 
-                type="text" 
-                value={inputName}
-                onChange={(e) => setInputName(e.target.value)}
-                placeholder="Enter your name..."
+              <label className="block text-sm font-medium mb-2 text-slate-300">
+                <Mail size={14} className="inline mr-2" />
+                邮箱
+              </label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="your@email.com"
                 className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 focus:border-cyan-500 outline-none transition-all text-white placeholder-slate-500"
               />
             </div>
-            <button 
+            <div>
+              <label className="block text-sm font-medium mb-2 text-slate-300">
+                <Lock size={14} className="inline mr-2" />
+                密码
+              </label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 focus:border-cyan-500 outline-none transition-all text-white placeholder-slate-500"
+              />
+            </div>
+
+            {authError && (
+              <div className="text-rose-400 text-sm bg-rose-500/10 border border-rose-500/20 rounded-xl px-4 py-3">
+                {authError}
+              </div>
+            )}
+
+            <button
               type="submit"
-              className="w-full bg-gradient-to-r from-cyan-600 to-purple-600 hover:from-cyan-500 hover:to-purple-500 py-3 rounded-xl font-bold transition-all monolith-glow"
+              disabled={authLoading}
+              className="w-full bg-gradient-to-r from-cyan-600 to-purple-600 hover:from-cyan-500 hover:to-purple-500 py-3 rounded-xl font-bold transition-all monolith-glow disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
-              Enter The Monolith
+              {authLoading ? (
+                <>
+                  <Loader2 size={18} className="animate-spin" />
+                  处理中...
+                </>
+              ) : (
+                authMode === 'login' ? 'Enter The Monolith' : '创建账户'
+              )}
             </button>
           </form>
+
+          <p className="text-xs text-zinc-500 text-center mt-6">
+            {authMode === 'login'
+              ? '没有账户？点击上方"注册"创建'
+              : '已有账户？点击上方"登录"'}
+          </p>
         </div>
       </div>
     );
@@ -197,7 +312,7 @@ export default function App() {
     <div className="min-h-screen bg-black flex flex-col md:flex-row">
       {/* Sidebar Navigation */}
       <nav className="fixed bottom-0 left-0 w-full md:relative md:w-24 bg-zinc-900/50 border-t md:border-t-0 md:border-r border-white/10 backdrop-blur-xl flex md:flex-col items-center justify-around md:justify-start md:pt-12 p-4 z-50">
-        <button 
+        <button
           onClick={() => setActiveView('feed')}
           className={`p-3 rounded-2xl transition-all ${activeView === 'feed' ? 'bg-cyan-500/20 text-cyan-400 monolith-glow' : 'text-slate-400 hover:text-white'}`}
         >
@@ -222,7 +337,7 @@ export default function App() {
           <UserIcon size={28} />
         </button>
         <div className="hidden md:flex flex-1"></div>
-        <button 
+        <button
           onClick={handleLogout}
           className="p-3 text-red-400 hover:bg-red-400/10 rounded-2xl transition-all"
         >
@@ -233,10 +348,10 @@ export default function App() {
       <main className="flex-1 overflow-y-auto pb-24 md:pb-0 h-screen scroll-smooth">
         <div className="max-w-3xl mx-auto px-4 py-8">
           {activeView === 'feed' && (
-            <FeedView 
-              posts={posts} 
-              createPost={createPost} 
-              currentUser={currentUser} 
+            <FeedView
+              posts={posts}
+              createPost={createPost}
+              currentUser={currentUser}
             />
           )}
           {activeView === 'market' && (
@@ -252,7 +367,7 @@ export default function App() {
             <ResearchHub />
           )}
           {activeView === 'profile' && (
-            <ProfileView 
+            <ProfileView
               user={{...currentUser, points: userPoints}}
               posts={posts.filter(p => p.userId === currentUser.id)}
               participatedEvents={events.filter(ev => ev.votes.some(v => v.userId === currentUser.id))}
@@ -264,7 +379,15 @@ export default function App() {
   );
 }
 
-const FeedView = ({ posts, createPost, currentUser }: { posts: Post[], createPost: (c: string) => void, currentUser: User }) => {
+interface AppUser {
+  id: string;
+  name: string;
+  avatar: string;
+  joinedAt: number;
+  points: number;
+}
+
+const FeedView = ({ posts, createPost, currentUser }: { posts: Post[], createPost: (c: string) => void, currentUser: AppUser }) => {
   const [content, setContent] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -282,7 +405,7 @@ const FeedView = ({ posts, createPost, currentUser }: { posts: Post[], createPos
       </header>
 
       <form onSubmit={handleSubmit} className="glass-card p-6 rounded-3xl space-y-4">
-        <textarea 
+        <textarea
           value={content}
           onChange={(e) => setContent(e.target.value)}
           placeholder="分享你的灵感... (支持带日期的批量粘贴)"
@@ -290,8 +413,8 @@ const FeedView = ({ posts, createPost, currentUser }: { posts: Post[], createPos
         />
         <div className="flex justify-between items-center border-t border-white/5 pt-4">
           <p className="text-xs text-zinc-500">提示: 输入带日期(YYYY-MM-DD)的内容可自动切割</p>
-          <button 
-            type="submit" 
+          <button
+            type="submit"
             className="bg-cyan-600 hover:bg-cyan-500 text-white px-6 py-2 rounded-xl flex items-center gap-2 font-bold transition-all monolith-glow"
           >
             <Send size={18} /> 发射
@@ -323,12 +446,12 @@ const FeedView = ({ posts, createPost, currentUser }: { posts: Post[], createPos
   );
 };
 
-const MarketView = ({ events, createEvent, onVote, onSolve, currentUser }: { 
-  events: PredictionEvent[], 
+const MarketView = ({ events, createEvent, onVote, onSolve, currentUser }: {
+  events: PredictionEvent[],
   createEvent: (t: string, d: string, s: string) => void,
   onVote: (id: string, choice: PredictionChoice) => void,
   onSolve: (id: string, res: PredictionChoice) => void,
-  currentUser: User 
+  currentUser: AppUser
 }) => {
   const [showCreate, setShowCreate] = useState(false);
   const [title, setTitle] = useState('');
@@ -349,7 +472,7 @@ const MarketView = ({ events, createEvent, onVote, onSolve, currentUser }: {
           <h2 className="text-3xl font-bold text-white mb-2">Prediction Market</h2>
           <p className="text-slate-500">预测未来，洞察先机</p>
         </div>
-        <button 
+        <button
           onClick={() => setShowCreate(!showCreate)}
           className="bg-purple-600 hover:bg-purple-500 p-4 rounded-2xl text-white monolith-glow transition-all"
         >
@@ -359,18 +482,18 @@ const MarketView = ({ events, createEvent, onVote, onSolve, currentUser }: {
 
       {showCreate && (
         <form onSubmit={handleCreate} className="glass-card p-6 rounded-3xl space-y-4 animate-in fade-in zoom-in duration-300">
-          <input 
+          <input
             value={title} onChange={e => setTitle(e.target.value)}
             placeholder="赌约标题: 如 Tsla 2026年股价是否 > 600"
             className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 outline-none"
           />
-          <textarea 
+          <textarea
             value={desc} onChange={e => setDesc(e.target.value)}
             placeholder="详细描述与结算标准..."
             className="w-full h-24 bg-white/5 border border-white/10 rounded-xl px-4 py-3 outline-none resize-none"
           />
           <div className="flex gap-4">
-            <input 
+            <input
               type="date" value={date} onChange={e => setDate(e.target.value)}
               className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 outline-none text-zinc-400"
             />
@@ -394,7 +517,7 @@ const MarketView = ({ events, createEvent, onVote, onSolve, currentUser }: {
                 </span>
                 <span className="text-zinc-500 text-xs">截止: {new Date(event.solveDate).toLocaleDateString()}</span>
               </div>
-              
+
               <h3 className="text-xl font-bold mb-2 text-white">{event.title}</h3>
               <p className="text-zinc-400 text-sm mb-6">{event.description}</p>
 
@@ -412,13 +535,13 @@ const MarketView = ({ events, createEvent, onVote, onSolve, currentUser }: {
               <div className="flex gap-4">
                 {event.status === 'active' ? (
                   <>
-                    <button 
+                    <button
                       onClick={() => onVote(event.id, 1)}
                       className={`flex-1 py-3 rounded-xl font-bold transition-all ${myVote?.choice === 1 ? 'bg-cyan-500 text-white monolith-glow' : 'bg-cyan-500/10 text-cyan-500 border border-cyan-500/30 hover:bg-cyan-500/20'}`}
                     >
                       Yes / 1
                     </button>
-                    <button 
+                    <button
                       onClick={() => onVote(event.id, 0)}
                       className={`flex-1 py-3 rounded-xl font-bold transition-all ${myVote?.choice === 0 ? 'bg-rose-500 text-white monolith-glow' : 'bg-rose-500/10 text-rose-500 border border-rose-500/30 hover:bg-rose-500/20'}`}
                     >
@@ -455,7 +578,7 @@ const MarketView = ({ events, createEvent, onVote, onSolve, currentUser }: {
   );
 };
 
-const ProfileView = ({ user, posts, participatedEvents }: { user: User, posts: Post[], participatedEvents: PredictionEvent[] }) => {
+const ProfileView = ({ user, posts, participatedEvents }: { user: AppUser, posts: Post[], participatedEvents: PredictionEvent[] }) => {
   return (
     <div className="space-y-12 animate-in fade-in duration-700">
       <header className="text-center cosmic-gradient p-12 rounded-[3rem] monolith-glow mb-12 border border-white/10">

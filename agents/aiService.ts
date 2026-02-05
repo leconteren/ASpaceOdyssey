@@ -1,8 +1,9 @@
 
 const getApiKey = (): string => {
+  // Vite exposes env vars via import.meta.env with VITE_ prefix
   return (
-    (typeof process !== 'undefined' && process.env?.GEMINI_API_KEY) ||
-    (typeof process !== 'undefined' && process.env?.API_KEY) ||
+    (import.meta.env?.VITE_GEMINI_API_KEY as string) ||
+    (import.meta.env?.GEMINI_API_KEY as string) ||
     ''
   );
 };
