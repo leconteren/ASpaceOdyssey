@@ -1,22 +1,31 @@
 
 import { AgentId, AgentConfig, ResearchTask } from './types';
 import { BaseAgent } from './baseAgent';
+import { createIdeaSourcingAgent, ideaSourcingConfig } from './ideaSourcingAgent';
 import { createFundamentalAgent, fundamentalConfig } from './fundamentalAgent';
 import { createTechnicalAgent, technicalConfig } from './technicalAgent';
 import { createDataTrackingAgent, dataTrackingConfig } from './dataTrackingAgent';
-import { createNewsAgent, newsConfig } from './newsAgent';
+import { createRiskControlAgent, riskControlConfig } from './riskControlAgent';
 import { createCommitteeAgent, committeeConfig } from './committeeAgent';
 import { callGemini } from './aiService';
 
 export const AGENT_CONFIGS: Record<AgentId, AgentConfig> = {
+  ideaSourcing: ideaSourcingConfig,
   fundamental: fundamentalConfig,
   technical: technicalConfig,
   dataTracking: dataTrackingConfig,
-  news: newsConfig,
+  riskControl: riskControlConfig,
   committee: committeeConfig,
 };
 
-export const ALL_AGENT_IDS: AgentId[] = ['fundamental', 'technical', 'dataTracking', 'news', 'committee'];
+export const ALL_AGENT_IDS: AgentId[] = [
+  'ideaSourcing',
+  'fundamental',
+  'technical',
+  'dataTracking',
+  'riskControl',
+  'committee',
+];
 
 export class Orchestrator {
   private agents: Map<AgentId, BaseAgent>;
@@ -24,10 +33,11 @@ export class Orchestrator {
 
   constructor() {
     this.agents = new Map();
+    this.agents.set('ideaSourcing', createIdeaSourcingAgent());
     this.agents.set('fundamental', createFundamentalAgent());
     this.agents.set('technical', createTechnicalAgent());
     this.agents.set('dataTracking', createDataTrackingAgent());
-    this.agents.set('news', createNewsAgent());
+    this.agents.set('riskControl', createRiskControlAgent());
     this.agents.set('committee', createCommitteeAgent());
     this.tasks = [];
   }
@@ -52,19 +62,24 @@ export class Orchestrator {
   }
 
   async routeQuery(query: string): Promise<AgentId[]> {
-    const routingPrompt = `你是一个投研中台的任务路由器。根据用户的问题，判断应该分配给哪些Agent来处理。
+    const routingPrompt = `你是投研中台的任务路由器。根据用户的问题，判断应该分配给哪些Agent来处理。
 
 可用的Agent:
-- fundamental: 基本面研究（公司分析、财务、估值、商业模式、竞争格局）
-- technical: 技术分析（价格走势、技术指标、图表形态、支撑阻力）
-- dataTracking: 数据追踪（宏观数据、行业数据、运营指标、另类数据）
-- news: 新闻与信息（新闻分析、事件影响、情绪分析、信息源评估）
-- committee: 投委会（综合评估、投资决策、风险管理、仓位建议）
+- ideaSourcing: Idea挖掘（寻找投资机会、非共识观点、另类信号、市场扫描）
+- fundamental: 基本面研究（公司分析、商业模式、财务、估值、产业趋势）
+- technical: 技术与择时（价格走势、支撑阻力、入场时机、赔率评估）
+- dataTracking: 数据追踪（追踪指标、数据更新、Dashboard设计）
+- riskControl: 风控与纪律（仓位管理、风险评估、情绪检测、交易检查）
+- committee: 投委会（综合评估、投资决策、观点challenge、最终建议）
 
-请只返回需要调用的Agent ID列表，用逗号分隔。如果需要综合分析，可以返回多个。
-例如: fundamental,technical
-例如: news
-例如: fundamental,technical,dataTracking,news,committee
+请只返回需要调用的Agent ID列表，用逗号分隔。
+- 如果是找投资机会：ideaSourcing
+- 如果是研究一个公司：fundamental
+- 如果是问入场时机：technical
+- 如果是设计追踪体系：dataTracking
+- 如果是风控/仓位问题：riskControl
+- 如果需要综合判断：committee
+- 如果需要全面分析：fundamental,technical,dataTracking,riskControl,committee
 
 只返回ID列表，不要其他文字。`;
 
@@ -89,19 +104,22 @@ export class Orchestrator {
     const lower = query.toLowerCase();
     const agents: AgentId[] = [];
 
-    if (/基本面|财务|估值|商业模式|护城河|revenue|earnings|valuation|dcf|pe|pb/.test(lower)) {
+    if (/idea|机会|推荐|找|挖掘|非共识|另类|冷门/.test(lower)) {
+      agents.push('ideaSourcing');
+    }
+    if (/分析|基本面|财务|估值|商业模式|护城河|revenue|earnings|valuation|dcf|pe|pb|公司/.test(lower)) {
       agents.push('fundamental');
     }
-    if (/技术|k线|macd|rsi|支撑|阻力|趋势|形态|均线|布林/.test(lower)) {
+    if (/技术|k线|macd|rsi|支撑|阻力|趋势|形态|均线|入场|时机|价格/.test(lower)) {
       agents.push('technical');
     }
-    if (/数据|追踪|track|指标|pmi|cpi|gdp|出货量|库存|增速/.test(lower)) {
+    if (/数据|追踪|track|指标|dashboard|监控/.test(lower)) {
       agents.push('dataTracking');
     }
-    if (/新闻|消息|事件|舆情|情绪|sentiment|公告|announcement/.test(lower)) {
-      agents.push('news');
+    if (/风控|风险|仓位|止损|情绪|纪律|检查|回撤/.test(lower)) {
+      agents.push('riskControl');
     }
-    if (/投委|决策|建议|买入|卖出|仓位|风险|组合|portfolio/.test(lower)) {
+    if (/投委|决策|建议|买入|卖出|challenge|评估|综合/.test(lower)) {
       agents.push('committee');
     }
 
@@ -125,6 +143,7 @@ export class Orchestrator {
     };
     this.tasks.push(task);
 
+    // Run non-committee agents first (in parallel)
     const promises = targetAgents
       .filter(id => id !== 'committee')
       .map(async (agentId) => {
@@ -141,6 +160,7 @@ export class Orchestrator {
 
     await Promise.all(promises);
 
+    // Run committee last with synthesis
     if (targetAgents.includes('committee') && Object.keys(task.results).length > 0) {
       onAgentStart?.('committee');
       const synthesisPrompt = this.buildSynthesisPrompt(query, task.results);
@@ -160,7 +180,7 @@ export class Orchestrator {
   }
 
   private buildSynthesisPrompt(query: string, results: Record<string, string>): string {
-    let prompt = `请作为投委会主席，综合以下各Agent的分析结果，给出最终的投资建议。
+    let prompt = `作为投委会，请综合以下各Agent的分析结果，给出最终的投资委员会评估。
 
 ## 原始问题
 ${query}
@@ -174,7 +194,14 @@ ${query}
       }
     }
 
-    prompt += `\n## 请综合以上分析，输出投资委员会评估报告（包含评分卡、核心逻辑、风险、建议）。`;
+    prompt += `
+## 请输出投委会评估报告
+
+1. 综合各方观点
+2. 指出潜在的盲点和风险
+3. 给出投委会评分卡
+4. 最终投资建议`;
+
     return prompt;
   }
 

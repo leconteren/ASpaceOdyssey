@@ -1,15 +1,15 @@
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
-  Building2, LineChart, Database, Newspaper, Users,
+  Building2, LineChart, Database, Users, Lightbulb, Shield,
   Send, Trash2, Zap, Bot, ChevronRight, Loader2,
-  Sparkles, ArrowLeft, CheckCircle2, AlertCircle, X
+  Sparkles, ArrowLeft, CheckCircle2, AlertCircle
 } from 'lucide-react';
 import { Orchestrator, AGENT_CONFIGS, ALL_AGENT_IDS } from './agents/index';
 import { AgentId, AgentMessage } from './agents/types';
 
 const ICON_MAP: Record<string, React.FC<{ size?: number; className?: string }>> = {
-  Building2, LineChart, Database, Newspaper, Users,
+  Building2, LineChart, Database, Users, Lightbulb, Shield,
 };
 
 const COLOR_MAP: Record<string, { bg: string; text: string; border: string; light: string }> = {
@@ -18,6 +18,9 @@ const COLOR_MAP: Record<string, { bg: string; text: string; border: string; ligh
   emerald: { bg: 'bg-emerald-500', text: 'text-emerald-600', border: 'border-emerald-500', light: 'bg-emerald-50' },
   amber: { bg: 'bg-amber-500', text: 'text-amber-600', border: 'border-amber-500', light: 'bg-amber-50' },
   rose: { bg: 'bg-rose-500', text: 'text-rose-600', border: 'border-rose-500', light: 'bg-rose-50' },
+  orange: { bg: 'bg-orange-500', text: 'text-orange-600', border: 'border-orange-500', light: 'bg-orange-50' },
+  red: { bg: 'bg-red-500', text: 'text-red-600', border: 'border-red-500', light: 'bg-red-50' },
+  indigo: { bg: 'bg-indigo-500', text: 'text-indigo-600', border: 'border-indigo-500', light: 'bg-indigo-50' },
 };
 
 type Mode = 'select' | 'chat' | 'multi';
@@ -34,7 +37,7 @@ export default function ResearchHub() {
   const [mode, setMode] = useState<Mode>('select');
   const [activeAgent, setActiveAgent] = useState<AgentId | null>(null);
   const [messages, setMessages] = useState<Record<AgentId, AgentMessage[]>>({
-    fundamental: [], technical: [], dataTracking: [], news: [], committee: [],
+    ideaSourcing: [], fundamental: [], technical: [], dataTracking: [], riskControl: [], committee: [],
   });
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -699,30 +702,35 @@ function processEmphasis(text: string): React.ReactNode {
 
 function getExampleQueries(agentId: AgentId): string[] {
   const examples: Record<AgentId, string[]> = {
+    ideaSourcing: [
+      '最近有什么非共识的投资机会？',
+      '帮我扫描一下AI领域的冷门标的',
+      'Reddit上最近有什么另类投资信号？',
+    ],
     fundamental: [
       '分析NVIDIA的商业模式和护城河',
       '比较AVGO和MRVL在ASIC领域的竞争力',
-      '评估某公司的估值是否合理',
+      '生成一份NVDA的完整Investment Memo',
     ],
     technical: [
       'TSLA目前的技术面如何？关键支撑阻力在哪里？',
       '半导体板块（SOX）当前处于什么技术周期？',
-      '如何判断一个个股的突破是否有效？',
+      '我想买AMD，现在是不是追高？',
     ],
     dataTracking: [
-      '当前需要追踪的半导体行业核心指标有哪些？',
-      '帮我设计一个AI行业的数据追踪体系',
-      '中国宏观经济目前有哪些领先指标值得关注？',
+      '帮我设计追踪NVDA的关键指标体系',
+      '半导体周期应该追踪哪些数据？',
+      '云计算capex近期有什么变化？',
     ],
-    news: [
-      '分析最近AI芯片领域的重大事件及其影响',
-      '如何评估一条市场传闻的可信度？',
-      '帮我梳理一下当前市场的核心叙事',
+    riskControl: [
+      '帮我检查一下这笔交易是否符合纪律',
+      '我现在很想追高买入，帮我冷静一下',
+      '评估一下我当前portfolio的风险暴露',
     ],
     committee: [
-      '综合分析一下NVDA是否值得现在建仓',
-      '帮我评估当前portfolio的风险暴露',
-      '如何在AI热潮中做好风险管理？',
+      'Challenge一下我对NVDA的投资论点',
+      '综合分析一下这个公司是否值得建仓',
+      '帮我review一下这笔投资决策',
     ],
   };
   return examples[agentId] || [];
