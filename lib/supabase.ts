@@ -3,12 +3,40 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://tfzfguypbaqcywqndcde.supabase.co';
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'sb_publishable_Y17UrzPVeXPs6LXkVExNeg_eMIM0U2a';
 
+// 自定义 localStorage 包装器，确保 session 持久化
+const customStorage = {
+  getItem: (key: string) => {
+    try {
+      const item = localStorage.getItem(key);
+      return item;
+    } catch {
+      return null;
+    }
+  },
+  setItem: (key: string, value: string) => {
+    try {
+      localStorage.setItem(key, value);
+    } catch (e) {
+      console.warn('Failed to save to localStorage:', e);
+    }
+  },
+  removeItem: (key: string) => {
+    try {
+      localStorage.removeItem(key);
+    } catch (e) {
+      console.warn('Failed to remove from localStorage:', e);
+    }
+  },
+};
+
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
-    persistSession: true,           // 持久化 session
-    storageKey: 'research-hub-auth', // localStorage key
-    autoRefreshToken: true,         // 自动刷新 token
-    detectSessionInUrl: true,       // 支持 OAuth 回调
+    persistSession: true,
+    storage: customStorage,
+    storageKey: 'research-hub-auth',
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
+    flowType: 'pkce',  // 更安全的 OAuth 流程
   },
 });
 

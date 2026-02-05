@@ -33,31 +33,51 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Get initial session from localStorage
     const initSession = async () => {
       try {
+        // 先检查 localStorage 是否有保存的 session
+        const savedSession = localStorage.getItem('research-hub-auth');
+        console.log('[Auth] Saved session exists:', !!savedSession);
+
         const { data: { session }, error } = await supabase.auth.getSession();
+        console.log('[Auth] getSession result:', { hasSession: !!session, error });
 
         if (error) {
-          console.warn('Session restore error:', error);
+          console.warn('[Auth] Session restore error:', error);
           setLoading(false);
           return;
         }
 
         if (session?.user) {
+          console.log('[Auth] Session found, user:', session.user.email);
           setSession(session);
           setUser(session.user);
           await fetchProfile(session.user.id);
-        } else {
-          // 尝试刷新 session
-          const { data: refreshData } = await supabase.auth.refreshSession();
+        } else if (savedSession) {
+          // localStorage 有数据但 getSession 失败，尝试刷新
+          console.log('[Auth] Attempting session refresh...');
+          const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+
+          if (refreshError) {
+            console.warn('[Auth] Refresh failed:', refreshError);
+            // 清除无效的 session
+            localStorage.removeItem('research-hub-auth');
+            setLoading(false);
+            return;
+          }
+
           if (refreshData.session?.user) {
+            console.log('[Auth] Session refreshed successfully');
             setSession(refreshData.session);
             setUser(refreshData.session.user);
             await fetchProfile(refreshData.session.user.id);
           } else {
             setLoading(false);
           }
+        } else {
+          console.log('[Auth] No session found');
+          setLoading(false);
         }
       } catch (err) {
-        console.error('Auth init error:', err);
+        console.error('[Auth] Init error:', err);
         setLoading(false);
       }
     };
