@@ -1,17 +1,19 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { BetaAnalysisReport, TickerBeta, AgentMessage } from './types';
-import { analyzeBeta, chatWithAgent } from './correlationAgent';
-import { Send, Loader2, Activity, Sparkles, ArrowRight, RefreshCw, TrendingUp, TrendingDown, ChevronUp, ChevronDown } from 'lucide-react';
+import { analyzeBetaWithRealData, chatWithAgent } from './correlationAgent';
+import { Send, Loader2, Activity, Sparkles, ArrowRight, RefreshCw, TrendingUp, TrendingDown, ChevronUp, ChevronDown, Database, Key } from 'lucide-react';
 
 // ── Helpers ──────────────────────────────────────────────────────────
 
 const fmt = (v: number, style: 'pct' | 'dec' = 'dec') => {
+  if (isNaN(v)) return 'N/A';
   if (style === 'pct') return `${(v * 100).toFixed(1)}%`;
   return v.toFixed(2);
 };
 
 const betaColor = (beta: number): string => {
+  if (isNaN(beta)) return 'text-slate-600';
   if (beta >= 1.5) return 'text-rose-400';
   if (beta >= 1.0) return 'text-amber-400';
   if (beta >= 0.5) return 'text-cyan-400';
@@ -19,6 +21,7 @@ const betaColor = (beta: number): string => {
 };
 
 const betaBarWidth = (beta: number): string => {
+  if (isNaN(beta)) return '0%';
   return `${Math.min(Math.abs(beta) / 2.0 * 100, 100)}%`;
 };
 
@@ -27,11 +30,13 @@ const betaBarWidth = (beta: number): string => {
 const PRESETS: { label: string; benchmark: string; tickers: string[] }[] = [
   { label: 'FAANG vs QQQ', benchmark: 'QQQ', tickers: ['META', 'AAPL', 'AMZN', 'NFLX', 'GOOG'] },
   { label: '半导体 vs SMH', benchmark: 'SMH', tickers: ['NVDA', 'AMD', 'AVGO', 'TSM', 'INTC'] },
-  { label: 'Crypto vs BTC', benchmark: 'BTC-USD', tickers: ['ETH-USD', 'SOL-USD', 'GLD', 'TLT'] },
   { label: '中概 vs KWEB', benchmark: 'KWEB', tickers: ['BABA', 'PDD', 'JD', 'BIDU', 'NIO'] },
+  { label: 'Mag7 vs SPY', benchmark: 'SPY', tickers: ['AAPL', 'MSFT', 'GOOG', 'AMZN', 'NVDA', 'META', 'TSLA'] },
 ];
 
 const PERIODS = ['1M', '3M', '6M', '1Y', '2Y', '5Y'];
+
+const AV_KEY_STORAGE = 'monolith_av_api_key';
 
 // ── Beta Report Table ────────────────────────────────────────────────
 
@@ -49,9 +54,14 @@ const BetaTable = ({ report }: { report: BetaAnalysisReport }) => {
   };
 
   const sorted = [...report.tickers].sort((a, b) => {
-    const va = a[sortKey] as number;
-    const vb = b[sortKey] as number;
-    return sortAsc ? va - vb : vb - va;
+    const va = a[sortKey];
+    const vb = b[sortKey];
+    if (typeof va === 'string' && typeof vb === 'string') {
+      return sortAsc ? va.localeCompare(vb) : vb.localeCompare(va);
+    }
+    const na = Number(va) || 0;
+    const nb = Number(vb) || 0;
+    return sortAsc ? na - nb : nb - na;
   });
 
   const SortIcon = ({ col }: { col: keyof TickerBeta }) => {
@@ -100,6 +110,7 @@ const BetaTable = ({ report }: { report: BetaAnalysisReport }) => {
         <tbody>
           {sorted.map((t, idx) => {
             const asymmetry = t.downsideBeta - t.upsideBeta;
+            const hasData = !isNaN(t.overallBeta);
             return (
               <React.Fragment key={t.ticker}>
                 <tr className={`border-b border-white/5 hover:bg-white/5 transition-colors ${idx % 2 === 0 ? '' : 'bg-white/[0.02]'}`}>
@@ -107,34 +118,40 @@ const BetaTable = ({ report }: { report: BetaAnalysisReport }) => {
                   <td className={tdClass}>
                     <div className="flex items-center gap-2">
                       <span className={`font-bold ${betaColor(t.overallBeta)}`}>{fmt(t.overallBeta)}</span>
-                      <div className="w-16 h-1.5 bg-zinc-800 rounded-full overflow-hidden">
-                        <div
-                          className={`h-full rounded-full ${t.overallBeta >= 1 ? 'bg-amber-500' : 'bg-cyan-500'}`}
-                          style={{ width: betaBarWidth(t.overallBeta) }}
-                        />
-                      </div>
+                      {hasData && (
+                        <div className="w-16 h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+                          <div
+                            className={`h-full rounded-full ${t.overallBeta >= 1 ? 'bg-amber-500' : 'bg-cyan-500'}`}
+                            style={{ width: betaBarWidth(t.overallBeta) }}
+                          />
+                        </div>
+                      )}
                     </div>
                   </td>
                   <td className={`${tdClass} text-emerald-400`}>{fmt(t.upsideBeta)}</td>
                   <td className={`${tdClass} text-rose-400`}>{fmt(t.downsideBeta)}</td>
                   <td className={`${tdClass} text-slate-300`}>{fmt(t.correlation)}</td>
                   <td className={`${tdClass} text-slate-400`}>{fmt(t.rSquared)}</td>
-                  <td className={`${tdClass} ${t.annualizedReturn >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                  <td className={`${tdClass} ${!isNaN(t.annualizedReturn) && t.annualizedReturn >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
                     {fmt(t.annualizedReturn, 'pct')}
                   </td>
                   <td className={`${tdClass} text-slate-400`}>{fmt(t.annualizedVolatility, 'pct')}</td>
                 </tr>
                 {/* Explanation row */}
-                <tr className={`${idx % 2 === 0 ? '' : 'bg-white/[0.02]'}`}>
-                  <td colSpan={8} className="px-3 pb-3 pt-0">
-                    <div className="flex items-center gap-3 text-xs text-slate-600">
-                      <span className={`px-1.5 py-0.5 rounded ${asymmetry > 0.1 ? 'bg-rose-500/10 text-rose-400' : asymmetry < -0.1 ? 'bg-emerald-500/10 text-emerald-400' : 'bg-zinc-800 text-zinc-500'}`}>
-                        β asymmetry: {asymmetry > 0 ? '+' : ''}{fmt(asymmetry)}
-                      </span>
-                      <span className="text-slate-500">{t.explanation}</span>
-                    </div>
-                  </td>
-                </tr>
+                {t.explanation && (
+                  <tr className={`${idx % 2 === 0 ? '' : 'bg-white/[0.02]'}`}>
+                    <td colSpan={8} className="px-3 pb-3 pt-0">
+                      <div className="flex items-center gap-3 text-xs text-slate-600">
+                        {hasData && (
+                          <span className={`px-1.5 py-0.5 rounded ${asymmetry > 0.1 ? 'bg-rose-500/10 text-rose-400' : asymmetry < -0.1 ? 'bg-emerald-500/10 text-emerald-400' : 'bg-zinc-800 text-zinc-500'}`}>
+                            β asymmetry: {asymmetry > 0 ? '+' : ''}{fmt(asymmetry)}
+                          </span>
+                        )}
+                        <span className="text-slate-500">{t.explanation}</span>
+                      </div>
+                    </td>
+                  </tr>
+                )}
               </React.Fragment>
             );
           })}
@@ -240,6 +257,8 @@ const AgentChat = ({
 // ── Main View ────────────────────────────────────────────────────────
 
 export default function StockCorrelationView() {
+  const [avApiKey, setAvApiKey] = useState(() => localStorage.getItem(AV_KEY_STORAGE) || '');
+  const [showKeyInput, setShowKeyInput] = useState(false);
   const [benchmarkInput, setBenchmarkInput] = useState('');
   const [tickerInput, setTickerInput] = useState('');
   const [selectedPeriod, setSelectedPeriod] = useState('1Y');
@@ -248,6 +267,16 @@ export default function StockCorrelationView() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isChatting, setIsChatting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [progress, setProgress] = useState<string | null>(null);
+
+  const saveAvKey = (key: string) => {
+    setAvApiKey(key);
+    if (key) {
+      localStorage.setItem(AV_KEY_STORAGE, key);
+    } else {
+      localStorage.removeItem(AV_KEY_STORAGE);
+    }
+  };
 
   const applyPreset = (preset: typeof PRESETS[0]) => {
     setBenchmarkInput(preset.benchmark);
@@ -257,6 +286,13 @@ export default function StockCorrelationView() {
   const handleAnalyze = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setProgress(null);
+
+    if (!avApiKey.trim()) {
+      setError('请先配置 Alpha Vantage API Key（免费申请: alphavantage.co）');
+      setShowKeyInput(true);
+      return;
+    }
 
     const benchmark = benchmarkInput.trim().toUpperCase();
     if (!benchmark) {
@@ -280,17 +316,31 @@ export default function StockCorrelationView() {
 
     setIsAnalyzing(true);
     try {
-      const result = await analyzeBeta(tickers, benchmark, selectedPeriod);
+      const result = await analyzeBetaWithRealData(
+        tickers,
+        benchmark,
+        selectedPeriod,
+        avApiKey.trim(),
+        (completed, total, current) => {
+          if (current) {
+            setProgress(`正在获取数据 (${completed + 1}/${total}): ${current}...`);
+          } else {
+            setProgress('正在计算 Beta & 生成 AI 洞察...');
+          }
+        }
+      );
       setReport(result);
+      setProgress(null);
       setMessages([{
         id: `msg_${Date.now()}`,
         role: 'agent',
-        content: `已完成以 ${benchmark} 为基准的 Beta 分析 (${selectedPeriod})。\n\n${result.summary}\n\n可以继续向我提问。`,
+        content: `已完成以 ${benchmark} 为基准的 Beta 分析 (${selectedPeriod})，数据来源: Alpha Vantage 真实日线。\n\n${result.summary}\n\n可以继续向我提问。`,
         report: result,
         timestamp: Date.now(),
       }]);
     } catch (err) {
       setError(err instanceof Error ? err.message : '分析失败，请重试');
+      setProgress(null);
     } finally {
       setIsAnalyzing(false);
     }
@@ -333,9 +383,46 @@ export default function StockCorrelationView() {
         <div className="flex items-center gap-3 mb-2">
           <Activity className="text-emerald-400" size={28} />
           <h2 className="text-3xl font-bold text-white">Beta Analysis Agent</h2>
+          <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center gap-1">
+            <Database size={10} /> Real Data
+          </span>
         </div>
-        <p className="text-slate-500">选择 Benchmark，分析标的在上涨/下跌行情中的 Beta 表现</p>
+        <p className="text-slate-500">基于 Alpha Vantage 真实日线数据，本地计算 Beta / Correlation，Gemini 生成定性洞察</p>
       </header>
+
+      {/* API Key Config */}
+      <div className="glass-card px-5 py-3 rounded-2xl flex flex-wrap items-center gap-3">
+        <Key size={14} className={avApiKey ? 'text-emerald-400' : 'text-slate-600'} />
+        {avApiKey && !showKeyInput ? (
+          <>
+            <span className="text-xs text-emerald-400">Alpha Vantage Key: ****{avApiKey.slice(-4)}</span>
+            <button
+              onClick={() => setShowKeyInput(true)}
+              className="text-xs text-slate-500 hover:text-slate-300 transition-colors"
+            >
+              修改
+            </button>
+          </>
+        ) : (
+          <>
+            <input
+              type="password"
+              value={avApiKey}
+              onChange={e => saveAvKey(e.target.value)}
+              placeholder="填入 Alpha Vantage API Key (免费: alphavantage.co/support/#api-key)"
+              className="flex-1 min-w-[200px] bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-xs outline-none focus:border-emerald-500/50 transition-colors text-white placeholder-zinc-600"
+            />
+            {avApiKey && (
+              <button
+                onClick={() => setShowKeyInput(false)}
+                className="text-xs text-emerald-400 hover:text-emerald-300 transition-colors"
+              >
+                确认
+              </button>
+            )}
+          </>
+        )}
+      </div>
 
       {/* Input Form */}
       <form onSubmit={handleAnalyze} className="glass-card p-6 rounded-3xl space-y-4">
@@ -409,6 +496,14 @@ export default function StockCorrelationView() {
           </button>
         </div>
 
+        {/* Progress indicator */}
+        {progress && (
+          <div className="flex items-center gap-2 text-xs text-cyan-400 bg-cyan-500/5 border border-cyan-500/10 rounded-xl px-4 py-2">
+            <Loader2 size={12} className="animate-spin" />
+            {progress}
+          </div>
+        )}
+
         {error && (
           <p className="text-rose-400 text-sm bg-rose-500/10 border border-rose-500/20 rounded-xl px-4 py-2">
             {error}
@@ -424,6 +519,9 @@ export default function StockCorrelationView() {
               <h3 className="text-lg font-bold text-white flex items-center gap-2">
                 <span className="w-2 h-2 rounded-full bg-emerald-400" />
                 Beta Report — vs {report.benchmark}
+                <span className="text-xs font-normal px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 ml-2">
+                  Alpha Vantage
+                </span>
               </h3>
               <button
                 onClick={() => { setReport(null); setMessages([]); }}
