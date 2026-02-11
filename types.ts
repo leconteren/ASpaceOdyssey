@@ -36,4 +36,28 @@ export interface PredictionEvent {
   votes: Vote[];
 }
 
-export type ViewType = 'feed' | 'market' | 'profile';
+export type ViewType = 'feed' | 'market' | 'correlation' | 'profile';
+
+// Stock Correlation Agent Types
+export interface CorrelationPair {
+  ticker1: string;
+  ticker2: string;
+  correlation: number;
+  explanation: string;
+}
+
+export interface CorrelationAnalysis {
+  tickers: string[];
+  matrix: number[][];
+  pairs: CorrelationPair[];
+  summary: string;
+  marketInsights: string;
+}
+
+export interface AgentMessage {
+  id: string;
+  role: 'user' | 'agent';
+  content: string;
+  analysis?: CorrelationAnalysis;
+  timestamp: number;
+}
