@@ -38,26 +38,33 @@ export interface PredictionEvent {
 
 export type ViewType = 'feed' | 'market' | 'correlation' | 'profile';
 
-// Stock Correlation Agent Types
-export interface CorrelationPair {
-  ticker1: string;
-  ticker2: string;
+// Stock Beta Analysis Agent Types
+export interface TickerBeta {
+  ticker: string;
+  overallBeta: number;
+  upsideBeta: number;
+  downsideBeta: number;
   correlation: number;
+  rSquared: number;
+  annualizedReturn: number;
+  annualizedVolatility: number;
   explanation: string;
 }
 
-export interface CorrelationAnalysis {
-  tickers: string[];
-  matrix: number[][];
-  pairs: CorrelationPair[];
+export interface BetaAnalysisReport {
+  benchmark: string;
+  benchmarkAnnualizedReturn: number;
+  benchmarkAnnualizedVolatility: number;
+  period: string;
+  tickers: TickerBeta[];
   summary: string;
-  marketInsights: string;
+  riskInsights: string;
 }
 
 export interface AgentMessage {
   id: string;
   role: 'user' | 'agent';
   content: string;
-  analysis?: CorrelationAnalysis;
+  report?: BetaAnalysisReport;
   timestamp: number;
 }

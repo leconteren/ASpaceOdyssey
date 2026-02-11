@@ -1,5 +1,5 @@
 
-import { CorrelationAnalysis, AgentMessage } from './types';
+import { BetaAnalysisReport, AgentMessage } from './types';
 
 const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
 
@@ -20,7 +20,7 @@ async function callGemini(prompt: string, maxTokens = 4096): Promise<string> {
     body: JSON.stringify({
       contents: [{ parts: [{ text: prompt }] }],
       generationConfig: {
-        temperature: 0.7,
+        temperature: 0.4,
         maxOutputTokens: maxTokens,
       },
     }),
@@ -36,63 +36,78 @@ async function callGemini(prompt: string, maxTokens = 4096): Promise<string> {
 }
 
 function parseJsonFromText(text: string): unknown {
-  // Strip markdown code fences if present
   const cleaned = text.replace(/```(?:json)?\n?/g, '').replace(/```\n?/g, '').trim();
   return JSON.parse(cleaned);
 }
 
-export async function analyzeCorrelation(
+export async function analyzeBeta(
   tickers: string[],
-  period: string,
-  additionalContext?: string
-): Promise<CorrelationAnalysis> {
+  benchmark: string,
+  period: string
+): Promise<BetaAnalysisReport> {
   const tickerList = tickers.join(', ');
-  const n = tickers.length;
 
-  const prompt = `You are a professional stock market correlation analysis agent. Analyze the historical price correlation between these stocks: ${tickerList}, over the time period: ${period}.
-${additionalContext ? `\nAdditional context from user: ${additionalContext}` : ''}
+  const prompt = `You are a quantitative finance analyst. Compute the beta analysis of these assets against a benchmark.
 
-Respond with ONLY valid JSON (no markdown, no code blocks, no extra text). Use this exact structure:
+Assets to analyze: ${tickerList}
+Benchmark: ${benchmark}
+Period: ${period}
+
+For each asset, calculate:
+1. Overall Beta = Cov(asset, benchmark) / Var(benchmark) over the full period
+2. Upside Beta = Beta computed only on days when benchmark daily return > 0
+3. Downside Beta = Beta computed only on days when benchmark daily return < 0
+4. Pearson correlation with benchmark
+5. R-squared (correlation^2)
+6. Annualized return and annualized volatility
+
+Respond with ONLY valid JSON (no markdown, no code blocks). Use this exact structure:
 
 {
-  "tickers": [${tickers.map(t => `"${t}"`).join(', ')}],
-  "matrix": [/* ${n}x${n} correlation matrix, symmetric, diagonal = 1.0, values between -1 and 1 */],
-  "pairs": [
+  "benchmark": "${benchmark}",
+  "benchmarkAnnualizedReturn": 0.12,
+  "benchmarkAnnualizedVolatility": 0.18,
+  "period": "${period}",
+  "tickers": [
     {
-      "ticker1": "XXX",
-      "ticker2": "YYY",
+      "ticker": "XXX",
+      "overallBeta": 1.15,
+      "upsideBeta": 1.05,
+      "downsideBeta": 1.25,
       "correlation": 0.85,
-      "explanation": "Brief explanation of why these stocks are correlated at this level"
+      "rSquared": 0.72,
+      "annualizedReturn": 0.15,
+      "annualizedVolatility": 0.22,
+      "explanation": "1-2 sentence explanation of the beta profile, e.g. higher downside beta means this stock amplifies losses more than gains"
     }
   ],
-  "summary": "2-3 sentence overall summary of the correlation landscape",
-  "marketInsights": "2-3 actionable investment insights based on these correlations"
+  "summary": "2-3 sentence quantitative summary in Chinese (简体中文)",
+  "riskInsights": "2-3 actionable risk management insights in Chinese (简体中文)"
 }
 
 Requirements:
-- Correlation values must be realistic based on actual historical market data
-- Include ALL unique pairs (n*(n-1)/2 pairs, no self-correlations)
-- Matrix must be symmetric with 1.0 on the diagonal
-- Write summary and marketInsights in Chinese (简体中文)
-- Write pair explanations in English`;
+- ALL values must be realistic based on actual historical market data
+- Use realistic annualized return and volatility figures
+- Upside/downside beta asymmetry should reflect real market behavior (most equities have higher downside beta)
+- Explanations in English, summary and riskInsights in Chinese (简体中文)`;
 
   const rawText = await callGemini(prompt);
 
   try {
-    const parsed = parseJsonFromText(rawText) as CorrelationAnalysis;
-    // Validate basic structure
-    if (!parsed.tickers || !parsed.matrix || !parsed.pairs) {
+    const parsed = parseJsonFromText(rawText) as BetaAnalysisReport;
+    if (!parsed.tickers || !parsed.benchmark) {
       throw new Error('Missing required fields');
     }
     return parsed;
   } catch {
-    // Fallback: return a skeleton with the raw text as summary
     return {
-      tickers,
-      matrix: tickers.map((_, i) => tickers.map((_, j) => (i === j ? 1.0 : 0))),
-      pairs: [],
+      benchmark,
+      benchmarkAnnualizedReturn: 0,
+      benchmarkAnnualizedVolatility: 0,
+      period,
+      tickers: [],
       summary: rawText || '分析失败，请重试。',
-      marketInsights: '',
+      riskInsights: '',
     };
   }
 }
@@ -102,18 +117,18 @@ export async function chatWithAgent(
   newMessage: string
 ): Promise<string> {
   const conversationCtx = history
-    .slice(-10) // keep last 10 messages for context window
+    .slice(-10)
     .map(m => `${m.role === 'user' ? 'User' : 'Agent'}: ${m.content}`)
     .join('\n');
 
-  const prompt = `You are a professional stock market correlation analysis agent called "Monolith Alpha". You help users understand how different stocks move in relation to each other and provide investment insights. You respond in the same language the user uses (Chinese or English).
+  const prompt = `You are "Monolith Alpha", a quantitative finance agent specializing in beta analysis and portfolio risk. You help users understand how assets move relative to benchmarks, interpret upside/downside beta asymmetry, and provide risk management insights. Respond in the same language the user uses.
 
 Previous conversation:
 ${conversationCtx}
 
 User: ${newMessage}
 
-Respond naturally and helpfully. If the user asks about specific stocks or correlations, provide detailed analysis with numbers. Keep your response concise but informative. Use markdown formatting for readability.`;
+Respond concisely with data-driven insights. Use numbers where possible.`;
 
   return callGemini(prompt, 2048);
 }
