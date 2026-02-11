@@ -200,7 +200,7 @@ const AgentChat = ({
       <div className="px-6 py-3 border-b border-white/5 flex items-center gap-2">
         <Sparkles size={14} className="text-purple-400" />
         <span className="text-xs font-bold text-slate-400">Monolith Alpha Agent</span>
-        <span className="text-xs text-slate-700 ml-auto">Powered by Gemini</span>
+        <span className="text-xs text-slate-700 ml-auto">Powered by Claude</span>
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 space-y-3 min-h-[160px]">
@@ -387,7 +387,7 @@ export default function StockCorrelationView() {
             <Database size={10} /> Real Data
           </span>
         </div>
-        <p className="text-slate-500">基于 Alpha Vantage 真实日线数据，本地计算 Beta / Correlation，Gemini 生成定性洞察</p>
+        <p className="text-slate-500">基于 Alpha Vantage 真实日线数据，本地计算 Beta / Correlation，Claude 生成定性洞察</p>
       </header>
 
       {/* API Key Config */}

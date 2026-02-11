@@ -3,28 +3,35 @@ import { BetaAnalysisReport, TickerBeta, AgentMessage } from './types';
 import { fetchMultipleDailyPrices } from './stockDataService';
 import { computeTickerBeta, computeBenchmarkStats } from './betaCalculator';
 
-const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
+const ANTHROPIC_API_URL = 'https://api.anthropic.com/v1/messages';
+const CLAUDE_MODEL = 'claude-sonnet-4-5-20250929';
 
-function getGeminiKey(): string | null {
-  return (process.env as Record<string, string>).GEMINI_API_KEY || null;
+function getAnthropicKey(): string | null {
+  return (process.env as Record<string, string>).ANTHROPIC_API_KEY || null;
 }
 
-async function callGemini(prompt: string, maxTokens = 2048): Promise<string> {
-  const apiKey = getGeminiKey();
+async function callClaude(prompt: string, maxTokens = 2048): Promise<string> {
+  const apiKey = getAnthropicKey();
   if (!apiKey) return '';
 
-  const response = await fetch(`${GEMINI_API_URL}?key=${apiKey}`, {
+  const response = await fetch(ANTHROPIC_API_URL, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'content-type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true',
+    },
     body: JSON.stringify({
-      contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: { temperature: 0.4, maxOutputTokens: maxTokens },
+      model: CLAUDE_MODEL,
+      max_tokens: maxTokens,
+      messages: [{ role: 'user', content: prompt }],
     }),
   });
 
   if (!response.ok) return '';
   const data = await response.json();
-  return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+  return data.content?.[0]?.text || '';
 }
 
 // ── Real-data Beta Analysis ──────────────────────────────────────────
@@ -68,7 +75,7 @@ export async function analyzeBetaWithRealData(
 
   const benchStats = computeBenchmarkStats(benchmarkPrices, period);
 
-  // 3. Ask Gemini for qualitative insights (non-blocking, best-effort)
+  // 3. Ask Claude for qualitative insights (best-effort)
   const { summary, riskInsights, explanations } = await generateInsights(
     benchmark,
     benchStats,
@@ -94,7 +101,7 @@ export async function analyzeBetaWithRealData(
   };
 }
 
-// ── Gemini Insights Generation ───────────────────────────────────────
+// ── Claude Insights Generation ───────────────────────────────────────
 
 async function generateInsights(
   benchmark: string,
@@ -102,8 +109,8 @@ async function generateInsights(
   tickers: TickerBeta[],
   period: string
 ): Promise<{ summary: string; riskInsights: string; explanations: Record<string, string> }> {
-  const geminiKey = getGeminiKey();
-  if (!geminiKey) {
+  const apiKey = getAnthropicKey();
+  if (!apiKey) {
     return { summary: '', riskInsights: '', explanations: {} };
   }
 
@@ -133,7 +140,7 @@ Respond with ONLY valid JSON (no markdown, no code blocks):
 }`;
 
   try {
-    const raw = await callGemini(prompt);
+    const raw = await callClaude(prompt);
     const cleaned = raw.replace(/```(?:json)?\n?/g, '').replace(/```\n?/g, '').trim();
     const parsed = JSON.parse(cleaned);
     return {
@@ -152,24 +159,42 @@ export async function chatWithAgent(
   history: AgentMessage[],
   newMessage: string
 ): Promise<string> {
-  const geminiKey = getGeminiKey();
-  if (!geminiKey) {
-    return '需要配置 GEMINI_API_KEY 才能使用对话功能。';
+  const apiKey = getAnthropicKey();
+  if (!apiKey) {
+    return '需要配置 ANTHROPIC_API_KEY 才能使用对话功能。请在 .env.local 中设置。';
   }
 
-  const conversationCtx = history
-    .slice(-10)
-    .map(m => `${m.role === 'user' ? 'User' : 'Agent'}: ${m.content}`)
-    .join('\n');
+  const systemPrompt = `You are "Monolith Alpha", a quantitative finance agent specializing in beta analysis and portfolio risk. You help users interpret upside/downside beta asymmetry and provide risk management insights. Respond in the same language the user uses. Respond concisely with data-driven insights. Use numbers where possible.`;
 
-  const prompt = `You are "Monolith Alpha", a quantitative finance agent specializing in beta analysis and portfolio risk. You help users interpret upside/downside beta asymmetry and provide risk management insights. Respond in the same language the user uses.
+  const messages = [
+    ...history.slice(-10).map(m => ({
+      role: m.role === 'user' ? 'user' as const : 'assistant' as const,
+      content: m.content,
+    })),
+    { role: 'user' as const, content: newMessage },
+  ];
 
-Previous conversation:
-${conversationCtx}
+  const response = await fetch(ANTHROPIC_API_URL, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true',
+    },
+    body: JSON.stringify({
+      model: CLAUDE_MODEL,
+      max_tokens: 2048,
+      system: systemPrompt,
+      messages,
+    }),
+  });
 
-User: ${newMessage}
+  if (!response.ok) {
+    const err = await response.text();
+    throw new Error(`Claude API 请求失败 (${response.status}): ${err}`);
+  }
 
-Respond concisely with data-driven insights. Use numbers where possible.`;
-
-  return callGemini(prompt);
+  const data = await response.json();
+  return data.content?.[0]?.text || 'No response from agent.';
 }
