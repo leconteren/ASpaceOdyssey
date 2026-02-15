@@ -1,0 +1,147 @@
+{
+  "generated_at": "2026-02-15T07:06:37.880399",
+  "methodology": "GitHub Search API commit search with monthly date ranges",
+  "total_commits_source": "Estimated from GitHub Octoverse ~3-3.5M daily public commits with ~15% YoY growth",
+  "data": [
+    {
+      "month": "2025-01",
+      "claude_by_url": 302,
+      "claude_by_author": 18,
+      "claude_total_monthly": 302,
+      "est_daily_claude": 10,
+      "est_daily_total": 2900000,
+      "claude_percentage": 0.0,
+      "days_in_period": 31
+    },
+    {
+      "month": "2025-02",
+      "claude_by_url": 1225,
+      "claude_by_author": 19,
+      "claude_total_monthly": 1225,
+      "est_daily_claude": 44,
+      "est_daily_total": 2950000,
+      "claude_percentage": 0.001,
+      "days_in_period": 28
+    },
+    {
+      "month": "2025-03",
+      "claude_by_url": 19540,
+      "claude_by_author": 267,
+      "claude_total_monthly": 19540,
+      "est_daily_claude": 630,
+      "est_daily_total": 3000000,
+      "claude_percentage": 0.021,
+      "days_in_period": 31
+    },
+    {
+      "month": "2025-04",
+      "claude_by_url": 16850,
+      "claude_by_author": 293,
+      "claude_total_monthly": 16850,
+      "est_daily_claude": 562,
+      "est_daily_total": 3050000,
+      "claude_percentage": 0.018,
+      "days_in_period": 30
+    },
+    {
+      "month": "2025-05",
+      "claude_by_url": 44480,
+      "claude_by_author": 425,
+      "claude_total_monthly": 44480,
+      "est_daily_claude": 1435,
+      "est_daily_total": 3100000,
+      "claude_percentage": 0.046,
+      "days_in_period": 31
+    },
+    {
+      "month": "2025-06",
+      "claude_by_url": 261044,
+      "claude_by_author": 3560,
+      "claude_total_monthly": 261044,
+      "est_daily_claude": 8701,
+      "est_daily_total": 3100000,
+      "claude_percentage": 0.281,
+      "days_in_period": 30
+    },
+    {
+      "month": "2025-07",
+      "claude_by_url": 476554,
+      "claude_by_author": 5705,
+      "claude_total_monthly": 476554,
+      "est_daily_claude": 15373,
+      "est_daily_total": 3100000,
+      "claude_percentage": 0.496,
+      "days_in_period": 31
+    },
+    {
+      "month": "2025-08",
+      "claude_by_url": 590189,
+      "claude_by_author": 7578,
+      "claude_total_monthly": 590189,
+      "est_daily_claude": 19038,
+      "est_daily_total": 3150000,
+      "claude_percentage": 0.604,
+      "days_in_period": 31
+    },
+    {
+      "month": "2025-09",
+      "claude_by_url": 502289,
+      "claude_by_author": 7295,
+      "claude_total_monthly": 502289,
+      "est_daily_claude": 16743,
+      "est_daily_total": 3200000,
+      "claude_percentage": 0.523,
+      "days_in_period": 30
+    },
+    {
+      "month": "2025-10",
+      "claude_by_url": 123848,
+      "claude_by_author": 89327,
+      "claude_total_monthly": 123848,
+      "est_daily_claude": 3995,
+      "est_daily_total": 3250000,
+      "claude_percentage": 0.123,
+      "days_in_period": 31
+    },
+    {
+      "month": "2025-11",
+      "claude_by_url": 114158,
+      "claude_by_author": 764897,
+      "claude_total_monthly": 764897,
+      "est_daily_claude": 25497,
+      "est_daily_total": 3300000,
+      "claude_percentage": 0.773,
+      "days_in_period": 30
+    },
+    {
+      "month": "2025-12",
+      "claude_by_url": 119923,
+      "claude_by_author": 457177,
+      "claude_total_monthly": 457177,
+      "est_daily_claude": 14748,
+      "est_daily_total": 3350000,
+      "claude_percentage": 0.44,
+      "days_in_period": 31
+    },
+    {
+      "month": "2026-01",
+      "claude_by_url": 201103,
+      "claude_by_author": 541990,
+      "claude_total_monthly": 541990,
+      "est_daily_claude": 17484,
+      "est_daily_total": 3400000,
+      "claude_percentage": 0.514,
+      "days_in_period": 31
+    },
+    {
+      "month": "2026-02",
+      "claude_by_url": 306270,
+      "claude_by_author": 281018,
+      "claude_total_monthly": 306270,
+      "est_daily_claude": 21876,
+      "est_daily_total": 3500000,
+      "claude_percentage": 0.625,
+      "days_in_period": 14
+    }
+  ]
+}
