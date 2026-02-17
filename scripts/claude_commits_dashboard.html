@@ -153,10 +153,11 @@ const D = RAW.map(r => {
 
 // ======================== CONFIG ========================
 const COLORS = {
-  coauthor: { fill: 'rgba(121,192,255,0.45)', stroke: '#79c0ff', name: 'C: Co-Authored-By (CLI)' },
-  author:   { fill: 'rgba(210,168,255,0.45)', stroke: '#d2a8ff', name: 'B: author=Claude (Web)' },
-  url:      { fill: 'rgba(247,129,102,0.45)', stroke: '#f78166', name: 'A: claude.ai/code URL' },
-  union:    { fill: 'rgba(86,211,100,0.15)',   stroke: '#56d364', name: 'Union (A∪B∪C)' },
+  coauthor:  { fill: 'rgba(121,192,255,0.45)', stroke: '#79c0ff', name: 'C: Co-Authored-By (CLI)' },
+  author:    { fill: 'rgba(210,168,255,0.45)', stroke: '#d2a8ff', name: 'B: author=Claude (Web)' },
+  url:       { fill: 'rgba(247,129,102,0.45)', stroke: '#f78166', name: 'A: claude.ai/code URL' },
+  union:     { fill: 'rgba(86,211,100,0.15)',   stroke: '#56d364', name: 'Union (A∪B∪C)' },
+  totalBars: { fill: 'rgba(139,148,158,0.18)',  stroke: 'rgba(139,148,158,0.35)', name: 'GitHub Total Commits (right axis)' },
 };
 const SERIES_KEYS = ['coauthor', 'author', 'url']; // draw order: bottom to top
 let view = 'absolute', display = 'stacked';
@@ -245,20 +246,27 @@ function computeStack() {
 
 function draw() {
   resize();
-  const padL = 72, padR = 24, padT = 10, padB = 40;
-  const cw = W - padL - padR + 48;
+  const padL = 72, padR = 72, padT = 10, padB = 40;
+  const fullW = W + 48;
+  const cw = fullW - padL - padR;
   const ch = H - padT - padB;
   const n = D.length;
+  const showBars = !hidden.has('totalBars') && view !== 'percent';
 
   ctx.clearRect(0, 0, canvas.width / dpr, canvas.height / dpr);
 
   const stack = computeStack();
   const maxVal = stack.maxVal * 1.12;
 
+  // Right axis: total commits
+  const totalVals = D.map(d => view === 'daily' ? d.total / d.days : d.total);
+  const maxTotal = Math.max(...totalVals) * 1.12;
+
   function xPos(i) { return padL + (i / (n - 1)) * cw; }
   function yPos(v) { return padT + ch - (v / maxVal) * ch; }
+  function yPosR(v) { return padT + ch - (v / maxTotal) * ch; }
 
-  // Grid lines + Y labels
+  // Grid lines + LEFT Y labels (Claude commits)
   const nTicks = 6;
   ctx.strokeStyle = '#21262d';
   ctx.lineWidth = 1;
@@ -277,23 +285,61 @@ function draw() {
     ctx.fillText(label, padL - 8, y + 4);
   }
 
+  // RIGHT Y labels (total commits) — only in non-percent mode
+  if (view !== 'percent') {
+    ctx.textAlign = 'left';
+    ctx.fillStyle = 'rgba(139,148,158,0.6)';
+    for (let i = 0; i <= nTicks; i++) {
+      const v = (maxTotal / nTicks) * i;
+      const y = yPosR(v);
+      let label;
+      if (v >= 1e6) label = (v / 1e6).toFixed(0) + 'M';
+      else if (v >= 1e3) label = (v / 1e3).toFixed(0) + 'K';
+      else label = Math.round(v).toString();
+      ctx.fillText(label, padL + cw + 8, y + 4);
+    }
+  }
+
   // X labels
   ctx.textAlign = 'center';
   ctx.fillStyle = '#8b949e';
   D.forEach((d, i) => {
     const x = xPos(i);
-    // Vertical grid
     ctx.strokeStyle = '#21262d'; ctx.lineWidth = 1;
     ctx.beginPath(); ctx.moveTo(x, padT); ctx.lineTo(x, padT + ch); ctx.stroke();
-    // Label
     const parts = d.m.split('-');
     const label = i % 2 === 0 || n <= 8 ? parts[0].slice(2) + '/' + parts[1] : '';
     if (label) ctx.fillText(label, x, padT + ch + 20);
   });
 
-  // Draw data
+  // ---- BARS: Total commits (draw FIRST so they sit behind lines/areas) ----
+  if (showBars) {
+    const barW = Math.max(8, (cw / n) * 0.55);
+    D.forEach((d, i) => {
+      const x = xPos(i);
+      const val = totalVals[i];
+      const barH = (val / maxTotal) * ch;
+      const barX = x - barW / 2;
+      const barY = padT + ch - barH;
+
+      // Fill
+      ctx.fillStyle = COLORS.totalBars.fill;
+      ctx.fillRect(barX, barY, barW, barH);
+      // Stroke
+      ctx.strokeStyle = COLORS.totalBars.stroke;
+      ctx.lineWidth = 1;
+      ctx.strokeRect(barX, barY, barW, barH);
+
+      // Highlight hovered bar
+      if (hoverIdx === i) {
+        ctx.fillStyle = 'rgba(139,148,158,0.12)';
+        ctx.fillRect(barX, barY, barW, barH);
+      }
+    });
+  }
+
+  // ---- AREA / LINES: Claude signals ----
   if (display === 'stacked') {
-    // Fill areas from bottom to top
     stack.activeKeys.forEach(key => {
       const bot = stack.cumBottom[key];
       const top = stack.cumTop[key];
@@ -311,7 +357,6 @@ function draw() {
       ctx.fillStyle = c.fill;
       ctx.fill();
 
-      // Top edge stroke
       ctx.beginPath();
       for (let i = 0; i < n; i++) {
         const x = xPos(i), y = yPos(top[i]);
@@ -321,7 +366,6 @@ function draw() {
       ctx.lineWidth = 2;
       ctx.stroke();
 
-      // Points
       for (let i = 0; i < n; i++) {
         ctx.beginPath();
         ctx.arc(xPos(i), yPos(top[i]), 3.5, 0, Math.PI * 2);
@@ -330,7 +374,6 @@ function draw() {
       }
     });
   } else {
-    // Lines mode
     stack.activeKeys.forEach(key => {
       const vals = stack.layers[key];
       const c = COLORS[key];
@@ -346,7 +389,6 @@ function draw() {
       ctx.stroke();
       ctx.setLineDash([]);
 
-      // Points
       for (let i = 0; i < n; i++) {
         ctx.beginPath();
         ctx.arc(xPos(i), yPos(vals[i]), key === 'union' ? 4 : 3.5, 0, Math.PI * 2);
@@ -364,7 +406,7 @@ function draw() {
     ctx.beginPath(); ctx.moveTo(x, padT); ctx.lineTo(x, padT + ch); ctx.stroke();
   }
 
-  // Y axis label
+  // LEFT Y axis label
   ctx.save();
   ctx.translate(14, padT + ch / 2);
   ctx.rotate(-Math.PI / 2);
@@ -372,9 +414,21 @@ function draw() {
   ctx.font = '12px -apple-system, sans-serif';
   ctx.textAlign = 'center';
   const yLabel = view === 'percent' ? '% of all public commits'
-    : view === 'daily' ? 'Commits / day' : 'Commits (monthly)';
+    : view === 'daily' ? 'Claude commits / day' : 'Claude commits (monthly)';
   ctx.fillText(yLabel, 0, 0);
   ctx.restore();
+
+  // RIGHT Y axis label
+  if (view !== 'percent') {
+    ctx.save();
+    ctx.translate(fullW - 10, padT + ch / 2);
+    ctx.rotate(Math.PI / 2);
+    ctx.fillStyle = 'rgba(139,148,158,0.6)';
+    ctx.font = '12px -apple-system, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(view === 'daily' ? 'All GitHub commits / day' : 'All GitHub commits (monthly)', 0, 0);
+    ctx.restore();
+  }
 }
 
 // ======================== TOOLTIP ========================
@@ -388,7 +442,7 @@ function fmtTip(v) {
 canvas.addEventListener('mousemove', e => {
   const rect = canvas.getBoundingClientRect();
   const mx = e.clientX - rect.left;
-  const padL = 72, padR = 24;
+  const padL = 72, padR = 72;
   const cw = rect.width - padL - padR;
   const n = D.length;
   const frac = (mx - padL) / cw;
@@ -417,10 +471,10 @@ canvas.addEventListener('mousemove', e => {
   });
   html += `<div class="tt-sep"></div>`;
   html += `<div class="tt-row"><span style="color:#56d364">Union total</span><span class="tt-val" style="color:#56d364">${fmtTip(getUnionVal(d))}</span></div>`;
-  if (view !== 'percent') {
-    html += `<div class="tt-row" style="color:#8b949e;font-size:11px"><span>Total all commits</span><span>${fmtTip(view === 'daily' ? d.total / d.days : d.total)}</span></div>`;
-    html += `<div class="tt-row" style="color:#e3b341;font-size:11px"><span>Claude share</span><span>${(d.union / d.total * 100).toFixed(3)}%</span></div>`;
-  }
+  const totalVal = view === 'daily' ? d.total / d.days : d.total;
+  html += `<div class="tt-row" style="color:#8b949e"><span><span class="tt-dot" style="background:rgba(139,148,158,0.5)"></span>GitHub Total</span><span class="tt-val" style="color:#8b949e">${fmtTip(totalVal)}</span></div>`;
+  html += `<div class="tt-sep"></div>`;
+  html += `<div class="tt-row" style="color:#e3b341"><span>Claude share</span><span class="tt-val" style="color:#e3b341">${(d.union / d.total * 100).toFixed(3)}%</span></div>`;
 
   tooltip.innerHTML = html;
   tooltip.style.display = 'block';
@@ -444,7 +498,8 @@ canvas.addEventListener('mouseleave', () => {
 // ======================== LEGEND ========================
 function renderLegend() {
   const el = document.getElementById('legend');
-  const keys = display === 'stacked' ? [...SERIES_KEYS] : [...SERIES_KEYS, 'union'];
+  const lineKeys = display === 'stacked' ? [...SERIES_KEYS] : [...SERIES_KEYS, 'union'];
+  const keys = [...lineKeys, 'totalBars'];
   el.innerHTML = keys.map(k => {
     const c = COLORS[k];
     const cls = hidden.has(k) ? 'legend-item hidden' : 'legend-item';
