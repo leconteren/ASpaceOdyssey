@@ -7,33 +7,33 @@ export interface User {
   points: number;
 }
 
-export interface Post {
+export type PromptCategory =
+  | 'coding'
+  | 'writing'
+  | 'analysis'
+  | 'creative'
+  | 'business'
+  | 'education'
+  | 'productivity'
+  | 'other';
+
+export interface Prompt {
   id: string;
   userId: string;
   userName: string;
-  content: string;
-  timestamp: number;
-  dateStr: string;
-}
-
-export type PredictionChoice = 0 | 1; // 0: No/Loss, 1: Yes/Win
-
-export interface Vote {
-  userId: string;
-  choice: PredictionChoice;
-}
-
-export interface PredictionEvent {
-  id: string;
-  creatorId: string;
-  creatorName: string;
   title: string;
+  content: string;
   description: string;
+  category: PromptCategory;
+  tags: string[];
   createdAt: number;
-  solveDate: number;
-  status: 'active' | 'solved';
-  finalResult?: PredictionChoice;
-  votes: Vote[];
+  updatedAt: number;
+  isPublic: boolean;
+  likes: string[]; // user IDs who liked
+  forks: number;
+  usageCount: number;
 }
 
-export type ViewType = 'feed' | 'market' | 'profile';
+export type ViewType = 'notebook' | 'marketplace' | 'profile';
+
+export type SortOption = 'newest' | 'popular' | 'most_used';
