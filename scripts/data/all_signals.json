@@ -1,0 +1,156 @@
+[
+  {
+    "month": "2025-01",
+    "start": "2025-01-01",
+    "end": "2025-02-01",
+    "url": 299,
+    "author": 32654,
+    "coauthor": 41,
+    "url_and_author": 0,
+    "url_and_coauthor": 9,
+    "total": 97415822
+  },
+  {
+    "month": "2025-02",
+    "start": "2025-02-01",
+    "end": "2025-03-01",
+    "url": 1202,
+    "author": 19107,
+    "coauthor": 2516,
+    "url_and_author": 10,
+    "url_and_coauthor": 956,
+    "total": 143246907
+  },
+  {
+    "month": "2025-03",
+    "start": "2025-03-01",
+    "end": "2025-04-01",
+    "url": 19397,
+    "author": 17963,
+    "coauthor": 19571,
+    "url_and_author": 447,
+    "url_and_coauthor": 18748,
+    "total": 125524357
+  },
+  {
+    "month": "2025-04",
+    "start": "2025-04-01",
+    "end": "2025-05-01",
+    "url": 16727,
+    "author": 17955,
+    "coauthor": 16955,
+    "url_and_author": 486,
+    "url_and_coauthor": 16228,
+    "total": 118608178
+  },
+  {
+    "month": "2025-05",
+    "start": "2025-05-01",
+    "end": "2025-06-01",
+    "url": 44320,
+    "author": 19416,
+    "coauthor": 45605,
+    "url_and_author": 781,
+    "url_and_coauthor": 42805,
+    "total": 127561844
+  },
+  {
+    "month": "2025-06",
+    "start": "2025-06-01",
+    "end": "2025-07-01",
+    "url": 260711,
+    "author": 35600,
+    "coauthor": 271892,
+    "url_and_author": 8117,
+    "url_and_coauthor": 255401,
+    "total": 116858056
+  },
+  {
+    "month": "2025-07",
+    "start": "2025-07-01",
+    "end": "2025-08-01",
+    "url": 475871,
+    "author": 49511,
+    "coauthor": 495488,
+    "url_and_author": 11916,
+    "url_and_coauthor": 467377,
+    "total": 129904804
+  },
+  {
+    "month": "2025-08",
+    "start": "2025-08-01",
+    "end": "2025-09-01",
+    "url": 588327,
+    "author": 51152,
+    "coauthor": 633947,
+    "url_and_author": 11131,
+    "url_and_coauthor": 576504,
+    "total": 129516628
+  },
+  {
+    "month": "2025-09",
+    "start": "2025-09-01",
+    "end": "2025-10-01",
+    "url": 501496,
+    "author": 47372,
+    "coauthor": 600481,
+    "url_and_author": 10481,
+    "url_and_coauthor": 487538,
+    "total": 139044584
+  },
+  {
+    "month": "2025-10",
+    "start": "2025-10-01",
+    "end": "2025-11-01",
+    "url": 124242,
+    "author": 132260,
+    "coauthor": 1038145,
+    "url_and_author": 6282,
+    "url_and_coauthor": 53301,
+    "total": 142907985
+  },
+  {
+    "month": "2025-11",
+    "start": "2025-11-01",
+    "end": "2025-12-01",
+    "url": 114645,
+    "author": 816375,
+    "coauthor": 1222081,
+    "url_and_author": 6792,
+    "url_and_coauthor": 32068,
+    "total": 149715712
+  },
+  {
+    "month": "2025-12",
+    "start": "2025-12-01",
+    "end": "2026-01-01",
+    "url": 120322,
+    "author": 511674,
+    "coauthor": 1626567,
+    "url_and_author": 3664,
+    "url_and_coauthor": 27747,
+    "total": 143734865
+  },
+  {
+    "month": "2026-01",
+    "start": "2026-01-01",
+    "end": "2026-02-01",
+    "url": 202293,
+    "author": 605862,
+    "coauthor": 3259835,
+    "url_and_author": 103192,
+    "url_and_coauthor": 29008,
+    "total": 154236344
+  },
+  {
+    "month": "2026-02",
+    "start": "2026-02-01",
+    "end": "2026-02-17",
+    "url": 355085,
+    "author": 373204,
+    "coauthor": 2538260,
+    "url_and_author": 301319,
+    "url_and_coauthor": 24363,
+    "total": 90165862
+  }
+]
