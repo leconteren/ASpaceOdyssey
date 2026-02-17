@@ -1,10 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Claude Code GitHub Commit Share — Interactive Dashboard</title>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
@@ -17,137 +16,71 @@
     padding: 32px 40px 16px;
     border-bottom: 1px solid #21262d;
   }
-  .header h1 {
-    font-size: 24px;
-    font-weight: 600;
-    color: #f0f6fc;
-    margin-bottom: 6px;
-  }
-  .header p {
-    font-size: 14px;
-    color: #8b949e;
-  }
+  .header h1 { font-size: 24px; font-weight: 600; color: #f0f6fc; margin-bottom: 6px; }
+  .header p { font-size: 14px; color: #8b949e; }
+
   .stats-row {
-    display: flex;
-    gap: 16px;
-    padding: 20px 40px;
-    flex-wrap: wrap;
+    display: flex; gap: 12px; padding: 20px 40px; flex-wrap: wrap;
   }
   .stat-card {
-    background: #161b22;
-    border: 1px solid #21262d;
-    border-radius: 8px;
-    padding: 16px 20px;
-    flex: 1;
-    min-width: 180px;
+    background: #161b22; border: 1px solid #21262d; border-radius: 8px;
+    padding: 14px 18px; flex: 1; min-width: 160px;
   }
-  .stat-card .label {
-    font-size: 12px;
-    color: #8b949e;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    margin-bottom: 4px;
-  }
-  .stat-card .value {
-    font-size: 28px;
-    font-weight: 700;
-  }
-  .stat-card .sub {
-    font-size: 12px;
-    color: #8b949e;
-    margin-top: 2px;
-  }
-  .stat-card.signal-url .value { color: #f78166; }
-  .stat-card.signal-author .value { color: #d2a8ff; }
-  .stat-card.signal-coauthor .value { color: #79c0ff; }
-  .stat-card.signal-total .value { color: #56d364; }
-  .stat-card.signal-pct .value { color: #e3b341; }
+  .stat-card .label { font-size: 11px; color: #8b949e; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+  .stat-card .value { font-size: 26px; font-weight: 700; }
+  .stat-card .sub { font-size: 11px; color: #8b949e; margin-top: 2px; }
 
   .controls {
-    display: flex;
-    gap: 8px;
-    padding: 12px 40px;
-    flex-wrap: wrap;
-    align-items: center;
+    display: flex; gap: 8px; padding: 12px 40px; flex-wrap: wrap; align-items: center;
   }
-  .controls label {
-    font-size: 13px;
-    color: #8b949e;
-    margin-right: 4px;
-  }
+  .controls label { font-size: 13px; color: #8b949e; margin-right: 4px; }
   .btn-group {
-    display: flex;
-    border: 1px solid #30363d;
-    border-radius: 6px;
-    overflow: hidden;
+    display: inline-flex; border: 1px solid #30363d; border-radius: 6px; overflow: hidden;
   }
   .btn-group button {
-    background: #21262d;
-    color: #c9d1d9;
-    border: none;
-    padding: 6px 14px;
-    font-size: 13px;
-    cursor: pointer;
-    border-right: 1px solid #30363d;
-    transition: all 0.15s;
+    background: #21262d; color: #c9d1d9; border: none; padding: 6px 14px;
+    font-size: 13px; cursor: pointer; border-right: 1px solid #30363d; transition: all 0.15s;
   }
   .btn-group button:last-child { border-right: none; }
   .btn-group button:hover { background: #30363d; }
-  .btn-group button.active {
-    background: #1f6feb;
-    color: #fff;
-  }
+  .btn-group button.active { background: #1f6feb; color: #fff; }
 
-  .chart-container {
-    padding: 16px 40px 32px;
-    position: relative;
-  }
+  .chart-section { padding: 16px 40px 8px; }
   .chart-wrap {
-    background: #161b22;
-    border: 1px solid #21262d;
-    border-radius: 8px;
-    padding: 24px;
-    position: relative;
+    background: #161b22; border: 1px solid #21262d; border-radius: 8px;
+    padding: 20px 24px 16px; position: relative;
   }
-  canvas { width: 100% !important; }
-
-  .legend-custom {
-    display: flex;
-    gap: 20px;
-    padding: 8px 0;
-    flex-wrap: wrap;
-    justify-content: center;
+  .legend-row {
+    display: flex; gap: 18px; justify-content: center; margin-bottom: 12px; flex-wrap: wrap;
   }
   .legend-item {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 13px;
-    color: #c9d1d9;
-    cursor: pointer;
-    user-select: none;
-    transition: opacity 0.2s;
+    display: flex; align-items: center; gap: 6px; font-size: 13px; color: #c9d1d9;
+    cursor: pointer; user-select: none; transition: opacity 0.2s;
   }
   .legend-item:hover { opacity: 0.8; }
-  .legend-item.hidden { opacity: 0.35; text-decoration: line-through; }
-  .legend-dot {
-    width: 12px;
-    height: 12px;
-    border-radius: 3px;
+  .legend-item.hidden { opacity: 0.3; text-decoration: line-through; }
+  .legend-dot { width: 12px; height: 12px; border-radius: 3px; flex-shrink: 0; }
+
+  canvas { display: block; width: 100%; }
+
+  .tooltip-box {
+    position: absolute; display: none; pointer-events: none; z-index: 10;
+    background: #1c2128; border: 1px solid #30363d; border-radius: 8px;
+    padding: 12px 14px; font-size: 13px; line-height: 1.6;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4); min-width: 240px;
   }
+  .tooltip-box .tt-title { color: #f0f6fc; font-weight: 600; margin-bottom: 4px; }
+  .tooltip-box .tt-row { display: flex; justify-content: space-between; gap: 16px; }
+  .tooltip-box .tt-dot { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 4px; vertical-align: middle; }
+  .tooltip-box .tt-val { font-weight: 600; color: #f0f6fc; }
+  .tooltip-box .tt-sep { border-top: 1px solid #30363d; margin: 4px 0; }
 
   .note {
-    padding: 12px 40px 32px;
-    font-size: 12px;
-    color: #484f58;
-    line-height: 1.6;
-    max-width: 900px;
+    padding: 12px 40px 32px; font-size: 12px; color: #484f58; line-height: 1.6; max-width: 900px;
   }
-
   @media (max-width: 768px) {
-    .header, .stats-row, .controls, .chart-container, .note { padding-left: 16px; padding-right: 16px; }
-    .stat-card { min-width: 140px; }
-    .stat-card .value { font-size: 22px; }
+    .header, .stats-row, .controls, .chart-section, .note { padding-left: 16px; padding-right: 16px; }
+    .stat-card .value { font-size: 20px; }
   }
 </style>
 </head>
@@ -163,332 +96,393 @@
 <div class="controls">
   <label>View:</label>
   <div class="btn-group" id="view-toggle">
-    <button class="active" data-view="absolute">Absolute Counts</button>
+    <button class="active" data-view="absolute">Monthly Total</button>
     <button data-view="daily">Daily Average</button>
     <button data-view="percent">% of All Commits</button>
   </div>
-
-  <label style="margin-left: 16px;">Display:</label>
+  <label style="margin-left:16px">Display:</label>
   <div class="btn-group" id="display-toggle">
     <button class="active" data-display="stacked">Stacked Area</button>
     <button data-display="lines">Separate Lines</button>
   </div>
 </div>
 
-<div class="chart-container">
+<div class="chart-section">
   <div class="chart-wrap">
-    <div class="legend-custom" id="custom-legend"></div>
-    <canvas id="mainChart" height="420"></canvas>
+    <div class="legend-row" id="legend"></div>
+    <canvas id="chart" height="460"></canvas>
+    <div class="tooltip-box" id="tooltip"></div>
   </div>
 </div>
 
 <div class="note">
-  <strong>Methodology:</strong> Data from GitHub Search API (<code>/search/commits</code>).
-  Three signals: (A) <code>claude.ai/code</code> URL in commit message,
-  (B) <code>author-name:Claude</code> — Claude as git author (Claude Code on Web),
-  (C) <code>"Co-authored-by: Claude"</code> trailer — human author with Claude as co-author (CLI).
-  Union estimated via inclusion-exclusion: A + B + C − A∩B − A∩C (B∩C ≈ 0).
-  GitHub Search API <code>total_count</code> is approximate for large result sets.
-  Feb 2026 is partial (1st–17th).
+  <strong>Methodology:</strong> GitHub Search API (<code>/search/commits</code>).
+  Signal A: <code>claude.ai/code</code> URL in commit message.
+  Signal B: <code>author-name:Claude</code> — Claude as git author (Web).
+  Signal C: <code>"Co-authored-by: Claude"</code> trailer — human author + Claude co-author (CLI).
+  Union = A + B + C − A∩B − A∩C (B∩C ≈ 0).
+  Feb 2026 partial (1st–17th). GitHub Search API <code>total_count</code> is approximate for large result sets.
 </div>
 
 <script>
-const RAW_DATA = [
-  {"month":"2025-01","url":299,"author":32654,"coauthor":41,"url_and_author":0,"url_and_coauthor":9,"total":97415822,"days":31},
-  {"month":"2025-02","url":1202,"author":19107,"coauthor":2516,"url_and_author":10,"url_and_coauthor":956,"total":143246907,"days":28},
-  {"month":"2025-03","url":19397,"author":17963,"coauthor":19571,"url_and_author":447,"url_and_coauthor":18748,"total":125524357,"days":31},
-  {"month":"2025-04","url":16727,"author":17955,"coauthor":16955,"url_and_author":486,"url_and_coauthor":16228,"total":118608178,"days":30},
-  {"month":"2025-05","url":44320,"author":19416,"coauthor":45605,"url_and_author":781,"url_and_coauthor":42805,"total":127561844,"days":31},
-  {"month":"2025-06","url":260711,"author":35600,"coauthor":271892,"url_and_author":8117,"url_and_coauthor":255401,"total":116858056,"days":30},
-  {"month":"2025-07","url":475871,"author":49511,"coauthor":495488,"url_and_author":11916,"url_and_coauthor":467377,"total":129904804,"days":31},
-  {"month":"2025-08","url":588327,"author":51152,"coauthor":633947,"url_and_author":11131,"url_and_coauthor":576504,"total":129516628,"days":31},
-  {"month":"2025-09","url":501496,"author":47372,"coauthor":600481,"url_and_author":10481,"url_and_coauthor":487538,"total":139044584,"days":30},
-  {"month":"2025-10","url":124242,"author":132260,"coauthor":1038145,"url_and_author":6282,"url_and_coauthor":53301,"total":142907985,"days":31},
-  {"month":"2025-11","url":114645,"author":816375,"coauthor":1222081,"url_and_author":6792,"url_and_coauthor":32068,"total":149715712,"days":30},
-  {"month":"2025-12","url":120322,"author":511674,"coauthor":1626567,"url_and_author":3664,"url_and_coauthor":27747,"total":143734865,"days":31},
-  {"month":"2026-01","url":202293,"author":605862,"coauthor":3259835,"url_and_author":103192,"url_and_coauthor":29008,"total":154236344,"days":31},
-  {"month":"2026-02","url":355085,"author":373204,"coauthor":2538260,"url_and_author":301319,"url_and_coauthor":24363,"total":90165862,"days":17}
+// ======================== DATA ========================
+const RAW = [
+  {m:"2025-01",url:299,author:32654,coauthor:41,ab:0,ac:9,total:97415822,days:31},
+  {m:"2025-02",url:1202,author:19107,coauthor:2516,ab:10,ac:956,total:143246907,days:28},
+  {m:"2025-03",url:19397,author:17963,coauthor:19571,ab:447,ac:18748,total:125524357,days:31},
+  {m:"2025-04",url:16727,author:17955,coauthor:16955,ab:486,ac:16228,total:118608178,days:30},
+  {m:"2025-05",url:44320,author:19416,coauthor:45605,ab:781,ac:42805,total:127561844,days:31},
+  {m:"2025-06",url:260711,author:35600,coauthor:271892,ab:8117,ac:255401,total:116858056,days:30},
+  {m:"2025-07",url:475871,author:49511,coauthor:495488,ab:11916,ac:467377,total:129904804,days:31},
+  {m:"2025-08",url:588327,author:51152,coauthor:633947,ab:11131,ac:576504,total:129516628,days:31},
+  {m:"2025-09",url:501496,author:47372,coauthor:600481,ab:10481,ac:487538,total:139044584,days:30},
+  {m:"2025-10",url:124242,author:132260,coauthor:1038145,ab:6282,ac:53301,total:142907985,days:31},
+  {m:"2025-11",url:114645,author:816375,coauthor:1222081,ab:6792,ac:32068,total:149715712,days:30},
+  {m:"2025-12",url:120322,author:511674,coauthor:1626567,ab:3664,ac:27747,total:143734865,days:31},
+  {m:"2026-01",url:202293,author:605862,coauthor:3259835,ab:103192,ac:29008,total:154236344,days:31},
+  {m:"2026-02",url:355085,author:373204,coauthor:2538260,ab:301319,ac:24363,total:90165862,days:17},
 ];
 
-// Compute derived fields
-const data = RAW_DATA.map(d => {
-  // De-overlap: exclusive portions for each signal
-  // URL-exclusive = URL - URL∩Author - URL∩CoAuthor
-  const urlExcl = Math.max(0, d.url - d.url_and_author - d.url_and_coauthor);
-  // Author-exclusive = Author - URL∩Author (Author∩CoAuthor ≈ 0)
-  const authorExcl = Math.max(0, d.author - d.url_and_author);
-  // CoAuthor-exclusive = CoAuthor - URL∩CoAuthor (Author∩CoAuthor ≈ 0)
-  const coauthorExcl = Math.max(0, d.coauthor - d.url_and_coauthor);
-  // Union
-  const union = d.url + d.author + d.coauthor - d.url_and_author - d.url_and_coauthor;
-
-  return {
-    ...d,
-    urlExcl,
-    authorExcl,
-    coauthorExcl,
-    union,
-    pctUrl: (d.url / d.total * 100),
-    pctAuthor: (d.author / d.total * 100),
-    pctCoauthor: (d.coauthor / d.total * 100),
-    pctUnion: (union / d.total * 100),
-    // Exclusive percentages
-    pctUrlExcl: (urlExcl / d.total * 100),
-    pctAuthorExcl: (authorExcl / d.total * 100),
-    pctCoauthorExcl: (coauthorExcl / d.total * 100),
-  };
+const D = RAW.map(r => {
+  const union = r.url + r.author + r.coauthor - r.ab - r.ac;
+  const urlX = Math.max(0, r.url - r.ab - r.ac);
+  const authX = Math.max(0, r.author - r.ab);
+  const coauthX = Math.max(0, r.coauthor - r.ac);
+  return { ...r, union, urlX, authX, coauthX };
 });
 
-const labels = data.map(d => d.month);
-const lastMonth = data[data.length - 1];
+// ======================== CONFIG ========================
+const COLORS = {
+  coauthor: { fill: 'rgba(121,192,255,0.45)', stroke: '#79c0ff', name: 'C: Co-Authored-By (CLI)' },
+  author:   { fill: 'rgba(210,168,255,0.45)', stroke: '#d2a8ff', name: 'B: author=Claude (Web)' },
+  url:      { fill: 'rgba(247,129,102,0.45)', stroke: '#f78166', name: 'A: claude.ai/code URL' },
+  union:    { fill: 'rgba(86,211,100,0.15)',   stroke: '#56d364', name: 'Union (A∪B∪C)' },
+};
+const SERIES_KEYS = ['coauthor', 'author', 'url']; // draw order: bottom to top
+let view = 'absolute', display = 'stacked';
+const hidden = new Set();
 
-// --- Stats cards ---
-const statsRow = document.getElementById('stats-row');
-const latestUnionDaily = Math.round(lastMonth.union / lastMonth.days);
-const statsCards = [
-  { cls: 'signal-url', label: 'Signal A: URL', value: fmt(lastMonth.url), sub: `${fmt(Math.round(lastMonth.url/lastMonth.days))}/day avg` },
-  { cls: 'signal-author', label: 'Signal B: Author', value: fmt(lastMonth.author), sub: `${fmt(Math.round(lastMonth.author/lastMonth.days))}/day avg` },
-  { cls: 'signal-coauthor', label: 'Signal C: Co-Author', value: fmt(lastMonth.coauthor), sub: `${fmt(Math.round(lastMonth.coauthor/lastMonth.days))}/day avg` },
-  { cls: 'signal-total', label: 'Union (de-overlapped)', value: fmt(lastMonth.union), sub: `${fmt(latestUnionDaily)}/day avg` },
-  { cls: 'signal-pct', label: '% of all commits', value: lastMonth.pctUnion.toFixed(2) + '%', sub: `Feb 2026 (partial)` },
-];
-statsCards.forEach(c => {
-  statsRow.innerHTML += `<div class="stat-card ${c.cls}"><div class="label">${c.label}</div><div class="value">${c.value}</div><div class="sub">${c.sub}</div></div>`;
-});
-
+// ======================== STATS ========================
 function fmt(n) {
   if (n >= 1e6) return (n / 1e6).toFixed(2) + 'M';
   if (n >= 1e3) return (n / 1e3).toFixed(1) + 'K';
   return n.toLocaleString();
 }
+const last = D[D.length - 1];
+document.getElementById('stats-row').innerHTML = [
+  ['signal-url',      'Signal A: URL',          fmt(last.url),      `${fmt(Math.round(last.url/last.days))}/day`, '#f78166'],
+  ['signal-author',   'Signal B: Author',       fmt(last.author),   `${fmt(Math.round(last.author/last.days))}/day`, '#d2a8ff'],
+  ['signal-coauthor', 'Signal C: Co-Author',    fmt(last.coauthor), `${fmt(Math.round(last.coauthor/last.days))}/day`, '#79c0ff'],
+  ['signal-union',    'Union',                   fmt(last.union),    `${fmt(Math.round(last.union/last.days))}/day`, '#56d364'],
+  ['signal-pct',      '% of all commits',        (last.union / last.total * 100).toFixed(2) + '%', 'Feb 2026 (partial)', '#e3b341'],
+].map(([cls, label, value, sub, color]) =>
+  `<div class="stat-card"><div class="label">${label}</div><div class="value" style="color:${color}">${value}</div><div class="sub">${sub}</div></div>`
+).join('');
 
-// --- Chart ---
-const ctx = document.getElementById('mainChart').getContext('2d');
+// ======================== CHART ENGINE ========================
+const canvas = document.getElementById('chart');
+const ctx = canvas.getContext('2d');
+const tooltip = document.getElementById('tooltip');
+const dpr = window.devicePixelRatio || 1;
+let W, H, hoverIdx = -1;
 
-const COLORS = {
-  url:      { bg: 'rgba(247,129,102,0.55)', border: '#f78166' },
-  author:   { bg: 'rgba(210,168,255,0.55)', border: '#d2a8ff' },
-  coauthor: { bg: 'rgba(121,192,255,0.55)', border: '#79c0ff' },
-  union:    { bg: 'rgba(86,211,100,0.2)',    border: '#56d364' },
-};
-
-let currentView = 'absolute';  // absolute | daily | percent
-let currentDisplay = 'stacked'; // stacked | lines
-let hiddenSets = new Set();
-
-function getDatasets() {
-  const isStacked = currentDisplay === 'stacked';
-  const isPercent = currentView === 'percent';
-  const isDaily = currentView === 'daily';
-
-  function values(field, exclField) {
-    return data.map(d => {
-      let v;
-      if (isStacked) {
-        v = isPercent ? d['pct' + cap(exclField)] : d[exclField];
-      } else {
-        v = isPercent ? d['pct' + cap(field)] : d[field];
-      }
-      if (isDaily && !isPercent) v = v / d.days;
-      return Math.round(v * 100) / 100;
-    });
-  }
-
-  function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
-
-  const sets = [
-    {
-      id: 'coauthor',
-      label: 'C: Co-Authored-By trailer (CLI)',
-      data: values('coauthor', 'coauthorExcl'),
-      backgroundColor: COLORS.coauthor.bg,
-      borderColor: COLORS.coauthor.border,
-      borderWidth: 2,
-      fill: isStacked ? 'origin' : false,
-      tension: 0.3,
-      pointRadius: 4,
-      pointHoverRadius: 7,
-      order: 3,
-    },
-    {
-      id: 'author',
-      label: 'B: author-name:Claude (Web)',
-      data: values('author', 'authorExcl'),
-      backgroundColor: COLORS.author.bg,
-      borderColor: COLORS.author.border,
-      borderWidth: 2,
-      fill: isStacked ? '-1' : false,
-      tension: 0.3,
-      pointRadius: 4,
-      pointHoverRadius: 7,
-      order: 2,
-    },
-    {
-      id: 'url',
-      label: 'A: claude.ai/code URL',
-      data: values('url', 'urlExcl'),
-      backgroundColor: COLORS.url.bg,
-      borderColor: COLORS.url.border,
-      borderWidth: 2,
-      fill: isStacked ? '-1' : false,
-      tension: 0.3,
-      pointRadius: 4,
-      pointHoverRadius: 7,
-      order: 1,
-    },
-  ];
-
-  // In lines mode, also add the union line
-  if (!isStacked) {
-    sets.push({
-      id: 'union',
-      label: 'Union (A∪B∪C)',
-      data: data.map(d => {
-        let v = isPercent ? d.pctUnion : d.union;
-        if (isDaily && !isPercent) v = v / d.days;
-        return Math.round(v * 100) / 100;
-      }),
-      backgroundColor: COLORS.union.bg,
-      borderColor: COLORS.union.border,
-      borderWidth: 2.5,
-      borderDash: [6, 3],
-      fill: false,
-      tension: 0.3,
-      pointRadius: 4,
-      pointHoverRadius: 7,
-      order: 0,
-    });
-  }
-
-  // Apply hidden state
-  sets.forEach(s => { s.hidden = hiddenSets.has(s.id); });
-  return sets;
+function resize() {
+  const rect = canvas.parentElement.getBoundingClientRect();
+  W = rect.width - 48;
+  H = 460;
+  canvas.width = (W + 48) * dpr;
+  canvas.height = H * dpr;
+  canvas.style.height = H + 'px';
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 }
 
-function getYLabel() {
-  if (currentView === 'percent') return '% of all public commits';
-  if (currentView === 'daily') return 'Commits per day';
-  return 'Total commits (monthly)';
+function getValues(key, d) {
+  if (view === 'percent') {
+    if (display === 'stacked') return d[key + 'X'] / d.total * 100;
+    return d[key] / d.total * 100;
+  }
+  const raw = display === 'stacked' ? d[key + 'X'] : d[key];
+  return view === 'daily' ? raw / d.days : raw;
 }
 
-let chart = new Chart(ctx, {
-  type: 'line',
-  data: { labels, datasets: getDatasets() },
-  options: {
-    responsive: true,
-    maintainAspectRatio: false,
-    interaction: { mode: 'index', intersect: false },
-    plugins: {
-      legend: { display: false },
-      tooltip: {
-        backgroundColor: '#1c2128',
-        titleColor: '#f0f6fc',
-        bodyColor: '#c9d1d9',
-        borderColor: '#30363d',
-        borderWidth: 1,
-        padding: 12,
-        callbacks: {
-          label: function(ctx) {
-            const v = ctx.parsed.y;
-            const suffix = currentView === 'percent' ? '%' : '';
-            const formatted = currentView === 'percent'
-              ? v.toFixed(3) + '%'
-              : v >= 1e6 ? (v/1e6).toFixed(2) + 'M'
-              : v >= 1e3 ? Math.round(v).toLocaleString()
-              : v.toFixed(0);
-            return `${ctx.dataset.label}: ${formatted}`;
-          },
-          afterBody: function(items) {
-            const idx = items[0].dataIndex;
-            const d = data[idx];
-            const union = currentView === 'percent'
-              ? d.pctUnion.toFixed(3) + '%'
-              : currentView === 'daily'
-              ? fmt(Math.round(d.union / d.days))
-              : fmt(d.union);
-            if (currentDisplay === 'stacked') {
-              return [`─────────`, `Union total: ${union}`];
-            }
-            return [];
-          }
-        }
-      }
-    },
-    scales: {
-      x: {
-        grid: { color: '#21262d' },
-        ticks: { color: '#8b949e', font: { size: 12 } },
-      },
-      y: {
-        stacked: currentDisplay === 'stacked',
-        grid: { color: '#21262d' },
-        ticks: {
-          color: '#8b949e',
-          font: { size: 12 },
-          callback: function(v) {
-            if (currentView === 'percent') return v.toFixed(1) + '%';
-            if (v >= 1e6) return (v/1e6).toFixed(1) + 'M';
-            if (v >= 1e3) return (v/1e3).toFixed(0) + 'K';
-            return v;
-          }
-        },
-        title: {
-          display: true,
-          text: getYLabel(),
-          color: '#8b949e',
-          font: { size: 13 }
-        }
-      }
+function getUnionVal(d) {
+  const u = d.union;
+  if (view === 'percent') return u / d.total * 100;
+  return view === 'daily' ? u / d.days : u;
+}
+
+function computeStack() {
+  // For stacked: cumulative from bottom; for lines: individual
+  const n = D.length;
+  const layers = {}; // key -> [val, ...]
+  const activeKeys = SERIES_KEYS.filter(k => !hidden.has(k));
+
+  activeKeys.forEach(k => { layers[k] = D.map(d => getValues(k, d)); });
+
+  if (display === 'stacked') {
+    // Cumulative
+    const cumBottom = {}; // key -> [bottom, ...]
+    const cumTop = {};
+    let running = new Array(n).fill(0);
+    activeKeys.forEach(k => {
+      cumBottom[k] = [...running];
+      cumTop[k] = running.map((v, i) => v + layers[k][i]);
+      running = cumTop[k].slice();
+    });
+    return { activeKeys, layers, cumBottom, cumTop, maxVal: Math.max(...running, 0.001) };
+  } else {
+    // Lines mode
+    let allVals = [];
+    activeKeys.forEach(k => { allVals.push(...layers[k]); });
+    if (!hidden.has('union')) {
+      const unionVals = D.map(d => getUnionVal(d));
+      layers['union'] = unionVals;
+      allVals.push(...unionVals);
     }
+    return { activeKeys: hidden.has('union') ? activeKeys : [...activeKeys, 'union'], layers, maxVal: Math.max(...allVals, 0.001) };
   }
+}
+
+function draw() {
+  resize();
+  const padL = 72, padR = 24, padT = 10, padB = 40;
+  const cw = W - padL - padR + 48;
+  const ch = H - padT - padB;
+  const n = D.length;
+
+  ctx.clearRect(0, 0, canvas.width / dpr, canvas.height / dpr);
+
+  const stack = computeStack();
+  const maxVal = stack.maxVal * 1.12;
+
+  function xPos(i) { return padL + (i / (n - 1)) * cw; }
+  function yPos(v) { return padT + ch - (v / maxVal) * ch; }
+
+  // Grid lines + Y labels
+  const nTicks = 6;
+  ctx.strokeStyle = '#21262d';
+  ctx.lineWidth = 1;
+  ctx.fillStyle = '#8b949e';
+  ctx.font = '12px -apple-system, sans-serif';
+  ctx.textAlign = 'right';
+  for (let i = 0; i <= nTicks; i++) {
+    const v = (maxVal / nTicks) * i;
+    const y = yPos(v);
+    ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(padL + cw, y); ctx.stroke();
+    let label;
+    if (view === 'percent') label = v.toFixed(v < 0.1 ? 3 : v < 1 ? 2 : 1) + '%';
+    else if (v >= 1e6) label = (v / 1e6).toFixed(1) + 'M';
+    else if (v >= 1e3) label = (v / 1e3).toFixed(0) + 'K';
+    else label = Math.round(v).toString();
+    ctx.fillText(label, padL - 8, y + 4);
+  }
+
+  // X labels
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#8b949e';
+  D.forEach((d, i) => {
+    const x = xPos(i);
+    // Vertical grid
+    ctx.strokeStyle = '#21262d'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(x, padT); ctx.lineTo(x, padT + ch); ctx.stroke();
+    // Label
+    const parts = d.m.split('-');
+    const label = i % 2 === 0 || n <= 8 ? parts[0].slice(2) + '/' + parts[1] : '';
+    if (label) ctx.fillText(label, x, padT + ch + 20);
+  });
+
+  // Draw data
+  if (display === 'stacked') {
+    // Fill areas from bottom to top
+    stack.activeKeys.forEach(key => {
+      const bot = stack.cumBottom[key];
+      const top = stack.cumTop[key];
+      const c = COLORS[key];
+
+      ctx.beginPath();
+      for (let i = 0; i < n; i++) {
+        const x = xPos(i), y = yPos(top[i]);
+        i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+      }
+      for (let i = n - 1; i >= 0; i--) {
+        ctx.lineTo(xPos(i), yPos(bot[i]));
+      }
+      ctx.closePath();
+      ctx.fillStyle = c.fill;
+      ctx.fill();
+
+      // Top edge stroke
+      ctx.beginPath();
+      for (let i = 0; i < n; i++) {
+        const x = xPos(i), y = yPos(top[i]);
+        i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+      }
+      ctx.strokeStyle = c.stroke;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // Points
+      for (let i = 0; i < n; i++) {
+        ctx.beginPath();
+        ctx.arc(xPos(i), yPos(top[i]), 3.5, 0, Math.PI * 2);
+        ctx.fillStyle = c.stroke;
+        ctx.fill();
+      }
+    });
+  } else {
+    // Lines mode
+    stack.activeKeys.forEach(key => {
+      const vals = stack.layers[key];
+      const c = COLORS[key];
+      ctx.beginPath();
+      for (let i = 0; i < n; i++) {
+        const x = xPos(i), y = yPos(vals[i]);
+        i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+      }
+      ctx.strokeStyle = c.stroke;
+      ctx.lineWidth = key === 'union' ? 2.5 : 2;
+      if (key === 'union') ctx.setLineDash([6, 4]);
+      else ctx.setLineDash([]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Points
+      for (let i = 0; i < n; i++) {
+        ctx.beginPath();
+        ctx.arc(xPos(i), yPos(vals[i]), key === 'union' ? 4 : 3.5, 0, Math.PI * 2);
+        ctx.fillStyle = c.stroke;
+        ctx.fill();
+      }
+    });
+  }
+
+  // Hover column highlight
+  if (hoverIdx >= 0 && hoverIdx < n) {
+    const x = xPos(hoverIdx);
+    ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(x, padT); ctx.lineTo(x, padT + ch); ctx.stroke();
+  }
+
+  // Y axis label
+  ctx.save();
+  ctx.translate(14, padT + ch / 2);
+  ctx.rotate(-Math.PI / 2);
+  ctx.fillStyle = '#8b949e';
+  ctx.font = '12px -apple-system, sans-serif';
+  ctx.textAlign = 'center';
+  const yLabel = view === 'percent' ? '% of all public commits'
+    : view === 'daily' ? 'Commits / day' : 'Commits (monthly)';
+  ctx.fillText(yLabel, 0, 0);
+  ctx.restore();
+}
+
+// ======================== TOOLTIP ========================
+function fmtTip(v) {
+  if (view === 'percent') return v.toFixed(3) + '%';
+  if (v >= 1e6) return (v / 1e6).toFixed(2) + 'M';
+  if (v >= 1e3) return Math.round(v).toLocaleString();
+  return Math.round(v).toString();
+}
+
+canvas.addEventListener('mousemove', e => {
+  const rect = canvas.getBoundingClientRect();
+  const mx = e.clientX - rect.left;
+  const padL = 72, padR = 24;
+  const cw = rect.width - padL - padR;
+  const n = D.length;
+  const frac = (mx - padL) / cw;
+  const idx = Math.round(frac * (n - 1));
+
+  if (idx < 0 || idx >= n || frac < -0.02 || frac > 1.02) {
+    hoverIdx = -1;
+    tooltip.style.display = 'none';
+    draw();
+    return;
+  }
+
+  hoverIdx = idx;
+  draw();
+
+  const d = D[idx];
+  const activeKeys = SERIES_KEYS.filter(k => !hidden.has(k));
+
+  let html = `<div class="tt-title">${d.m} (${d.days} days)</div>`;
+  // Show in reverse order (top signal first)
+  [...activeKeys].reverse().forEach(k => {
+    const v = getValues(k, d);
+    const raw = d[k];
+    const c = COLORS[k];
+    html += `<div class="tt-row"><span><span class="tt-dot" style="background:${c.stroke}"></span>${c.name}</span><span class="tt-val">${fmtTip(v)}</span></div>`;
+  });
+  html += `<div class="tt-sep"></div>`;
+  html += `<div class="tt-row"><span style="color:#56d364">Union total</span><span class="tt-val" style="color:#56d364">${fmtTip(getUnionVal(d))}</span></div>`;
+  if (view !== 'percent') {
+    html += `<div class="tt-row" style="color:#8b949e;font-size:11px"><span>Total all commits</span><span>${fmtTip(view === 'daily' ? d.total / d.days : d.total)}</span></div>`;
+    html += `<div class="tt-row" style="color:#e3b341;font-size:11px"><span>Claude share</span><span>${(d.union / d.total * 100).toFixed(3)}%</span></div>`;
+  }
+
+  tooltip.innerHTML = html;
+  tooltip.style.display = 'block';
+
+  // Position tooltip
+  const chartWrap = canvas.parentElement.getBoundingClientRect();
+  let tx = e.clientX - chartWrap.left + 16;
+  let ty = e.clientY - chartWrap.top - 20;
+  if (tx + 260 > chartWrap.width) tx = tx - 280;
+  if (ty < 0) ty = 10;
+  tooltip.style.left = tx + 'px';
+  tooltip.style.top = ty + 'px';
 });
 
-// Custom legend
+canvas.addEventListener('mouseleave', () => {
+  hoverIdx = -1;
+  tooltip.style.display = 'none';
+  draw();
+});
+
+// ======================== LEGEND ========================
 function renderLegend() {
-  const container = document.getElementById('custom-legend');
-  container.innerHTML = '';
-  chart.data.datasets.forEach(ds => {
-    const item = document.createElement('div');
-    item.className = 'legend-item' + (hiddenSets.has(ds.id) ? ' hidden' : '');
-    item.innerHTML = `<span class="legend-dot" style="background:${ds.borderColor}"></span>${ds.label}`;
+  const el = document.getElementById('legend');
+  const keys = display === 'stacked' ? [...SERIES_KEYS] : [...SERIES_KEYS, 'union'];
+  el.innerHTML = keys.map(k => {
+    const c = COLORS[k];
+    const cls = hidden.has(k) ? 'legend-item hidden' : 'legend-item';
+    return `<div class="${cls}" data-key="${k}"><span class="legend-dot" style="background:${c.stroke}"></span>${c.name}</div>`;
+  }).join('');
+
+  el.querySelectorAll('.legend-item').forEach(item => {
     item.addEventListener('click', () => {
-      if (hiddenSets.has(ds.id)) hiddenSets.delete(ds.id);
-      else hiddenSets.add(ds.id);
-      rebuildChart();
+      const k = item.dataset.key;
+      hidden.has(k) ? hidden.delete(k) : hidden.add(k);
+      renderLegend();
+      draw();
     });
-    container.appendChild(item);
   });
 }
-renderLegend();
 
-function rebuildChart() {
-  chart.data.datasets = getDatasets();
-  chart.options.scales.y.stacked = currentDisplay === 'stacked';
-  chart.options.scales.y.title.text = getYLabel();
-  chart.update();
-  renderLegend();
-}
-
-// View toggle
+// ======================== CONTROLS ========================
 document.querySelectorAll('#view-toggle button').forEach(btn => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('#view-toggle button').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
-    currentView = btn.dataset.view;
-    rebuildChart();
+    view = btn.dataset.view;
+    draw();
   });
 });
-
-// Display toggle
 document.querySelectorAll('#display-toggle button').forEach(btn => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('#display-toggle button').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
-    currentDisplay = btn.dataset.display;
-    rebuildChart();
+    display = btn.dataset.display;
+    renderLegend();
+    draw();
   });
 });
-</script>
 
+window.addEventListener('resize', draw);
+renderLegend();
+draw();
+</script>
 </body>
 </html>
