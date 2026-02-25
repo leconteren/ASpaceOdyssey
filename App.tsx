@@ -2,7 +2,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { User, Post, PredictionEvent, ViewType, PredictionChoice } from './types';
 import { INITIAL_USER, parseInitialPosts } from './constants';
-import { Plus, MessageSquare, TrendingUp, User as UserIcon, LogOut, Send, CheckCircle, Clock } from 'lucide-react';
+import { Plus, MessageSquare, TrendingUp, User as UserIcon, LogOut, Send, CheckCircle, Clock, Zap } from 'lucide-react';
+import EarningsAgentView from './EarningsAgent';
 
 export default function App() {
   const [currentUser, setCurrentUser] = useState<User | null>(() => {
@@ -202,13 +203,19 @@ export default function App() {
         >
           <MessageSquare size={28} />
         </button>
-        <button 
+        <button
           onClick={() => setActiveView('market')}
           className={`p-3 rounded-2xl transition-all md:mt-8 ${activeView === 'market' ? 'bg-purple-500/20 text-purple-400 monolith-glow' : 'text-slate-400 hover:text-white'}`}
         >
           <TrendingUp size={28} />
         </button>
-        <button 
+        <button
+          onClick={() => setActiveView('earnings')}
+          className={`p-3 rounded-2xl transition-all md:mt-8 ${activeView === 'earnings' ? 'bg-emerald-500/20 text-emerald-400 monolith-glow' : 'text-slate-400 hover:text-white'}`}
+        >
+          <Zap size={28} />
+        </button>
+        <button
           onClick={() => setActiveView('profile')}
           className={`p-3 rounded-2xl transition-all md:mt-8 ${activeView === 'profile' ? 'bg-amber-500/20 text-amber-400 monolith-glow' : 'text-slate-400 hover:text-white'}`}
         >
@@ -233,13 +240,16 @@ export default function App() {
             />
           )}
           {activeView === 'market' && (
-            <MarketView 
-              events={events} 
-              createEvent={createEvent} 
-              onVote={handleVote} 
+            <MarketView
+              events={events}
+              createEvent={createEvent}
+              onVote={handleVote}
               onSolve={solveEvent}
-              currentUser={currentUser} 
+              currentUser={currentUser}
             />
+          )}
+          {activeView === 'earnings' && (
+            <EarningsAgentView />
           )}
           {activeView === 'profile' && (
             <ProfileView 

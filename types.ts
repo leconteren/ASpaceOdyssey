@@ -36,4 +36,4 @@ export interface PredictionEvent {
   votes: Vote[];
 }
 
-export type ViewType = 'feed' | 'market' | 'profile';
+export type ViewType = 'feed' | 'market' | 'earnings' | 'profile';
