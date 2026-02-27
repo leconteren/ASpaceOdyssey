@@ -1,0 +1,136 @@
+# ============================================================
+# Earnings Call Agent — Company Universe & Configuration
+# ============================================================
+# 按板块管理跟踪的公司列表，可随时添加/删除
+
+company_universe:
+
+  # ── 互联网 / Internet ──────────────────────────────────────
+  internet:
+    - { ticker: META,  name: Meta Platforms }
+    - { ticker: GOOGL, name: Alphabet }
+    - { ticker: AMZN,  name: Amazon }
+    - { ticker: NFLX,  name: Netflix }
+    - { ticker: SNAP,  name: Snap }
+    - { ticker: PINS,  name: Pinterest }
+    - { ticker: UBER,  name: Uber Technologies }
+    - { ticker: ABNB,  name: Airbnb }
+    - { ticker: BKNG,  name: Booking Holdings }
+    - { ticker: DASH,  name: DoorDash }
+    - { ticker: BIDU,  name: Baidu }
+    - { ticker: PDD,   name: PDD Holdings }
+    - { ticker: JD,    name: JD.com }
+    - { ticker: BABA,  name: Alibaba }
+    - { ticker: SE,    name: Sea Limited }
+    - { ticker: MELI,  name: MercadoLibre }
+    - { ticker: CPNG,  name: Coupang }
+    - { ticker: GRAB,  name: Grab Holdings }
+
+  # ── 软件 / Software ────────────────────────────────────────
+  software:
+    - { ticker: MSFT,  name: Microsoft }
+    - { ticker: CRM,   name: Salesforce }
+    - { ticker: NOW,   name: ServiceNow }
+    - { ticker: SNOW,  name: Snowflake }
+    - { ticker: PANW,  name: Palo Alto Networks }
+    - { ticker: CRWD,  name: CrowdStrike }
+    - { ticker: DDOG,  name: Datadog }
+    - { ticker: MDB,   name: MongoDB }
+    - { ticker: PLTR,  name: Palantir }
+    - { ticker: SHOP,  name: Shopify }
+    - { ticker: WDAY,  name: Workday }
+    - { ticker: ADBE,  name: Adobe }
+    - { ticker: INTU,  name: Intuit }
+    - { ticker: ORCL,  name: Oracle }
+    - { ticker: HUBS,  name: HubSpot }
+    - { ticker: ZS,    name: Zscaler }
+    - { ticker: NET,   name: Cloudflare }
+    - { ticker: MNDY,  name: monday.com }
+    - { ticker: APP,   name: AppLovin }
+
+  # ── 半导体 / Semiconductor ─────────────────────────────────
+  semiconductor:
+    - { ticker: NVDA,  name: NVIDIA }
+    - { ticker: AVGO,  name: Broadcom }
+    - { ticker: AMD,   name: AMD }
+    - { ticker: INTC,  name: Intel }
+    - { ticker: QCOM,  name: Qualcomm }
+    - { ticker: MRVL,  name: Marvell Technology }
+    - { ticker: KLAC,  name: KLA Corporation }
+    - { ticker: LRCX,  name: Lam Research }
+    - { ticker: AMAT,  name: Applied Materials }
+    - { ticker: TSM,   name: TSMC }
+    - { ticker: ARM,   name: Arm Holdings }
+    - { ticker: MU,    name: Micron Technology }
+    - { ticker: ASML,  name: ASML }
+    - { ticker: ON,    name: ON Semiconductor }
+    - { ticker: MCHP,  name: Microchip Technology }
+    - { ticker: ADI,   name: Analog Devices }
+    - { ticker: TXN,   name: Texas Instruments }
+
+  # ── 消费 / Consumer ────────────────────────────────────────
+  consumer:
+    - { ticker: AAPL,  name: Apple }
+    - { ticker: TSLA,  name: Tesla }
+    - { ticker: NKE,   name: Nike }
+    - { ticker: SBUX,  name: Starbucks }
+    - { ticker: DIS,   name: Disney }
+    - { ticker: SPOT,  name: Spotify }
+    - { ticker: RBLX,  name: Roblox }
+    - { ticker: NTES,  name: NetEase }
+    - { ticker: TCEHY, name: Tencent }
+    - { ticker: WMT,   name: Walmart }
+    - { ticker: COST,  name: Costco }
+    - { ticker: TGT,   name: Target }
+    - { ticker: LULU,  name: Lululemon }
+
+  # ── AI 基础设施 / AI Infrastructure ────────────────────────
+  ai_infra:
+    - { ticker: MSFT,  name: Microsoft }
+    - { ticker: GOOGL, name: Alphabet }
+    - { ticker: AMZN,  name: Amazon }
+    - { ticker: NVDA,  name: NVIDIA }
+    - { ticker: SMCI,  name: Super Micro Computer }
+    - { ticker: VRT,   name: Vertiv }
+    - { ticker: DELL,  name: Dell Technologies }
+    - { ticker: HPE,   name: Hewlett Packard Enterprise }
+    - { ticker: ANET,  name: Arista Networks }
+    - { ticker: CRDO,  name: Credo Technology }
+    - { ticker: COHR,  name: Coherent }
+
+# ── 设置 ─────────────────────────────────────────────────────
+settings:
+  output_dir: output
+  # 追踪业绩后股价反应的时间窗口（交易日）
+  price_tracking_windows: [1, 5, 20]
+  # 市场情绪阈值
+  sentiment:
+    bullish: 0.7    # beat且涨的比例 > 70% → 情绪偏多
+    neutral_low: 0.4
+    neutral_high: 0.7
+    bearish: 0.4    # < 40% → 情绪偏空
+  # AI 关键词（用于从earnings call中提取AI相关信息）
+  ai_keywords:
+    - artificial intelligence
+    - AI
+    - machine learning
+    - deep learning
+    - generative AI
+    - GenAI
+    - large language model
+    - LLM
+    - GPU
+    - accelerator
+    - inference
+    - training
+    - data center
+    - cloud AI
+    - copilot
+    - agent
+    - agentic
+    - RAG
+    - transformer
+    - neural network
+    - AI capex
+    - AI revenue
+    - AI monetization
