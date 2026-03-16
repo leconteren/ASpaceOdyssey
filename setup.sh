@@ -28,8 +28,13 @@ OPEND_TAR="Futu_OpenD_${OPEND_VERSION}.tar.gz"
 
 # ---- 1. 安装 Python 依赖 ----
 info "正在安装 Python 依赖..."
-pip install futu-api pandas numpy tabulate 2>/dev/null || \
-pip3 install futu-api pandas numpy tabulate || \
+
+# futu-api 需要 setuptools<69 才能正常构建 wheel
+PIP_CMD="pip"
+$PIP_CMD --version &>/dev/null || PIP_CMD="pip3"
+
+$PIP_CMD install "setuptools>=65,<69" wheel 2>/dev/null || true
+$PIP_CMD install futu-api pandas numpy tabulate || \
     error "pip 安装失败，请确保已安装 Python 3.8+"
 
 info "Python 依赖安装完成 ✓"
@@ -41,17 +46,15 @@ else
     info "正在下载 FutuOpenD v${OPEND_VERSION}..."
     mkdir -p "$OPEND_DIR"
 
-    if command -v wget &>/dev/null; then
-        wget -q --show-progress -O "/tmp/$OPEND_TAR" "$OPEND_DOWNLOAD_URL" || \
-            warn "下载失败，可能需要手动下载（见下方说明）"
-    elif command -v curl &>/dev/null; then
-        curl -L --progress-bar -o "/tmp/$OPEND_TAR" "$OPEND_DOWNLOAD_URL" || \
-            warn "下载失败，可能需要手动下载（见下方说明）"
-    else
-        error "未找到 wget 或 curl，请先安装其中之一"
+    DOWNLOAD_OK=false
+    if command -v curl &>/dev/null; then
+        curl -L --connect-timeout 15 --progress-bar -o "/tmp/$OPEND_TAR" "$OPEND_DOWNLOAD_URL" 2>&1 && DOWNLOAD_OK=true
+    fi
+    if [ "$DOWNLOAD_OK" = false ] && command -v wget &>/dev/null; then
+        wget --timeout=15 -q --show-progress -O "/tmp/$OPEND_TAR" "$OPEND_DOWNLOAD_URL" 2>&1 && DOWNLOAD_OK=true
     fi
 
-    if [ -f "/tmp/$OPEND_TAR" ]; then
+    if [ "$DOWNLOAD_OK" = true ] && [ -f "/tmp/$OPEND_TAR" ] && [ -s "/tmp/$OPEND_TAR" ]; then
         info "正在解压到 $OPEND_DIR..."
         tar -xzf "/tmp/$OPEND_TAR" -C "$OPEND_DIR" --strip-components=1 2>/dev/null || \
         tar -xzf "/tmp/$OPEND_TAR" -C "$OPEND_DIR" 2>/dev/null || \
@@ -60,7 +63,17 @@ else
         chmod +x "$OPEND_DIR/FutuOpenD" 2>/dev/null || true
         info "FutuOpenD 安装完成 ✓"
     else
-        warn "FutuOpenD 下载文件不存在"
+        rm -f "/tmp/$OPEND_TAR" 2>/dev/null
+        warn "自动下载失败（可能被代理/防火墙拦截）"
+        warn "请手动下载 FutuOpenD 并解压到 $OPEND_DIR"
+        echo ""
+        echo "  手动下载方法:"
+        echo "  1. 浏览器打开: https://www.futunn.com/en/download/OpenAPI"
+        echo "  2. 下载 Linux (Ubuntu) 版本的 tar.gz"
+        echo "  3. 解压到 $OPEND_DIR:"
+        echo "     tar -xzf Futu_OpenD_*.tar.gz -C $OPEND_DIR --strip-components=1"
+        echo "     chmod +x $OPEND_DIR/FutuOpenD"
+        echo ""
     fi
 fi
 
