@@ -102,6 +102,124 @@ def print_full_report(report: dict):
     print()
 
 
+def print_pnl_report(report: dict):
+    """打印盈亏分析报告"""
+
+    print()
+    print("╔" + "═" * 58 + "╗")
+    print("║" + "  盈亏分析报告".center(50) + "║")
+    print("╚" + "═" * 58 + "╝")
+
+    if "盈亏总览" in report:
+        print_section("💰 盈亏总览")
+        print_dict(report["盈亏总览"])
+
+    if "已实现盈亏明细" in report:
+        print_section("📊 已实现盈亏明细")
+        df = report["已实现盈亏明细"]
+        if isinstance(df, pd.DataFrame):
+            print_dataframe(df)
+        else:
+            print("  (无数据)")
+
+    if "浮动盈亏" in report:
+        print_section("📈 浮动盈亏（未实现）")
+        df = report["浮动盈亏"]
+        if isinstance(df, pd.DataFrame):
+            print_dataframe(df)
+        else:
+            print("  (无数据)")
+
+    if "个股盈亏汇总" in report:
+        print_section("📋 个股盈亏汇总")
+        df = report["个股盈亏汇总"]
+        if isinstance(df, pd.DataFrame):
+            print_dataframe(df)
+        else:
+            print("  (无数据)")
+
+    print()
+    print("-" * 60)
+
+
+def print_technical_report(report: dict):
+    """打印技术分析报告"""
+
+    print()
+    print("╔" + "═" * 58 + "╗")
+    title = f"  技术分析: {report.get('股票', '')}  "
+    print("║" + title.center(50) + "║")
+    print("╚" + "═" * 58 + "╝")
+
+    for key in ("K线数据范围", "K线数量"):
+        if key in report:
+            print(f"  {key}: {report[key]}")
+
+    if "当前技术信号" in report:
+        print_section("🔔 当前技术信号")
+        signals = report["当前技术信号"]
+        for k, v in signals.items():
+            if k == "支撑阻力":
+                print(f"  当前价: {v.get('当前价', 'N/A')}")
+                print(f"  支撑位: {v.get('支撑位', [])}")
+                print(f"  阻力位: {v.get('阻力位', [])}")
+            else:
+                print(f"  {k}: {v}")
+
+    if "支撑阻力位" in report:
+        print_section("📐 支撑阻力位")
+        sr = report["支撑阻力位"]
+        print(f"  当前价: {sr.get('当前价', 'N/A')}")
+        print(f"  支撑位: {sr.get('支撑位', [])}")
+        print(f"  阻力位: {sr.get('阻力位', [])}")
+
+    print()
+    print("-" * 60)
+
+
+def print_portfolio_report(report: dict):
+    """打印持仓组合分析报告"""
+
+    print()
+    print("╔" + "═" * 58 + "╗")
+    print("║" + "  持仓组合分析报告".center(48) + "║")
+    print("╚" + "═" * 58 + "╝")
+
+    if "市值占比明细" in report:
+        print_section("💼 市值占比明细")
+        df = report["市值占比明细"]
+        if isinstance(df, pd.DataFrame):
+            print_dataframe(df)
+        else:
+            print("  (无数据)")
+
+    if "行业分布" in report:
+        print_section("🏭 行业分布")
+        df = report["行业分布"]
+        if isinstance(df, pd.DataFrame) and not df.empty:
+            print_dataframe(df)
+            # 简易柱状图
+            print()
+            max_pct = df["占比%"].max() if "占比%" in df.columns else 0
+            if max_pct > 0:
+                for _, row in df.iterrows():
+                    bar = "█" * int(row["占比%"] / max_pct * 30)
+                    print(f"  {row['行业']:<12s} {bar} {row['占比%']}%")
+        else:
+            print("  (无行业数据)")
+
+    if "集中度分析" in report:
+        print_section("🎯 集中度分析")
+        print_dict(report["集中度分析"])
+
+    if "风险敞口" in report:
+        print_section("⚠️  风险敞口")
+        print_dict(report["风险敞口"])
+
+    print()
+    print("-" * 60)
+
+
 def export_to_csv(report: dict, prefix: str = "futu_analysis"):
     """将分析结果导出为 CSV 文件"""
     exported = []

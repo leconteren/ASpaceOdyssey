@@ -1,6 +1,6 @@
 """
 历史交易数据获取模块
-从 FutuOpenD 获取历史成交记录、持仓、账户信息等
+从 FutuOpenD 获取历史成交记录、持仓、账户信息、行情数据等
 """
 
 import pandas as pd
@@ -10,6 +10,10 @@ from futu import (
     TrdMarket,
     TrdSide,
     SecurityFirm,
+    KLType,
+    KL_FIELD,
+    SubType,
+    AuType,
 )
 from .connection import FutuConnection
 
@@ -142,3 +146,87 @@ class TradeDataFetcher:
             return pd.DataFrame()
 
         return pd.concat(all_deals, ignore_index=True)
+
+    # ========== 行情数据接口 ==========
+
+    def get_realtime_quotes(self, code_list: list) -> pd.DataFrame:
+        """
+        获取实时行情快照
+
+        Args:
+            code_list: 股票代码列表，如 ["US.AAPL", "US.TSLA"]
+
+        Returns:
+            DataFrame 包含最新价、涨跌幅等
+        """
+        quote_ctx = self.conn.connect_quote()
+        ret, data = quote_ctx.get_market_snapshot(code_list)
+        if ret != RET_OK:
+            raise RuntimeError(f"获取实时行情失败: {data}")
+        return data
+
+    def get_kline(
+        self,
+        code: str,
+        ktype: str = "K_DAY",
+        count: int = 120,
+        autype: str = "qfq",
+        start: str = "",
+        end: str = "",
+    ) -> pd.DataFrame:
+        """
+        获取K线数据
+
+        Args:
+            code: 股票代码，如 "US.AAPL"
+            ktype: K线类型 (K_DAY/K_WEEK/K_MON/K_60M 等)
+            count: 获取条数 (start/end 为空时生效)
+            autype: 复权类型 (qfq=前复权, hfq=后复权, None=不复权)
+            start: 开始日期 YYYY-MM-DD
+            end: 结束日期 YYYY-MM-DD
+
+        Returns:
+            DataFrame 包含 OHLCV 数据
+        """
+        kl_type_map = {
+            "K_1M": KLType.K_1M,
+            "K_5M": KLType.K_5M,
+            "K_15M": KLType.K_15M,
+            "K_30M": KLType.K_30M,
+            "K_60M": KLType.K_60M,
+            "K_DAY": KLType.K_DAY,
+            "K_WEEK": KLType.K_WEEK,
+            "K_MON": KLType.K_MON,
+        }
+        au_type_map = {
+            "qfq": AuType.QFQ,
+            "hfq": AuType.HFQ,
+            "none": AuType.NONE,
+        }
+
+        kl = kl_type_map.get(ktype.upper(), KLType.K_DAY)
+        au = au_type_map.get(str(autype).lower(), AuType.QFQ)
+
+        quote_ctx = self.conn.connect_quote()
+
+        if start and end:
+            ret, data, _ = quote_ctx.request_history_kline(
+                code, start=start, end=end, ktype=kl, autype=au, max_count=1000
+            )
+        else:
+            ret, data, _ = quote_ctx.request_history_kline(
+                code, ktype=kl, autype=au, max_count=count
+            )
+
+        if ret != RET_OK:
+            raise RuntimeError(f"获取K线失败 ({code}): {data}")
+
+        return data
+
+    def get_stock_basicinfo(self, code_list: list) -> pd.DataFrame:
+        """获取股票基本信息（行业、市值等）"""
+        quote_ctx = self.conn.connect_quote()
+        ret, data = quote_ctx.get_market_snapshot(code_list)
+        if ret != RET_OK:
+            raise RuntimeError(f"获取股票信息失败: {data}")
+        return data
