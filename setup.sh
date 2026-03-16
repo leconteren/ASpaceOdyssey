@@ -19,10 +19,12 @@ warn()  { echo -e "${YELLOW}[WARN]${NC} $*"; }
 error() { echo -e "${RED}[ERROR]${NC} $*"; exit 1; }
 
 # ---- 配置 ----
-OPEND_VERSION="7.1.3088"
+OPEND_VERSION="9.0.5008"
 OPEND_DIR="$HOME/FutuOpenD"
-OPEND_DOWNLOAD_URL="https://softdl.futunn.com/FutuOpenD/FutuOpenD_${OPEND_VERSION}_Ubuntu16.04.tar.gz"
-OPEND_TAR="FutuOpenD_${OPEND_VERSION}.tar.gz"
+# 富途官方下载地址 (Ubuntu 版本)
+OPEND_DOWNLOAD_URL="https://softwaredownload.futunn.com/Futu_OpenD_${OPEND_VERSION}_Ubuntu16.04.tar.gz"
+# 备用：官方下载页面 https://www.futunn.com/en/download/OpenAPI
+OPEND_TAR="Futu_OpenD_${OPEND_VERSION}.tar.gz"
 
 # ---- 1. 安装 Python 依赖 ----
 info "正在安装 Python 依赖..."
@@ -117,7 +119,8 @@ echo "  3. 运行交易分析:"
 echo "     cd $(dirname "$0")"
 echo "     python -m futu_analyzer.main"
 echo ""
-echo "  如果无法自动下载 FutuOpenD，请手动下载:"
-echo "  https://www.futunn.com/download/openAPI"
+echo "  如果自动下载失败，请手动下载:"
+echo "  官方下载页: https://www.futunn.com/en/download/OpenAPI"
+echo "  直接链接:   https://softwaredownload.futunn.com/Futu_OpenD_${OPEND_VERSION}_Ubuntu16.04.tar.gz"
 echo "  解压到 $OPEND_DIR 目录即可"
 echo ""
