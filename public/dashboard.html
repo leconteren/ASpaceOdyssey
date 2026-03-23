@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Claude Code GitHub Commit Share — Interactive Dashboard</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    background: #0d1117;
+    color: #e6edf3;
+    min-height: 100vh;
+  }
+  .header {
+    padding: 32px 40px 16px;
+    border-bottom: 1px solid #21262d;
+  }
+  .header h1 { font-size: 24px; font-weight: 600; color: #f0f6fc; margin-bottom: 6px; }
+  .header p { font-size: 14px; color: #8b949e; }
+
+  .stats-row {
+    display: flex; gap: 12px; padding: 20px 40px; flex-wrap: wrap;
+  }
+  .stat-card {
+    background: #161b22; border: 1px solid #21262d; border-radius: 8px;
+    padding: 14px 18px; flex: 1; min-width: 160px;
+  }
+  .stat-card .label { font-size: 11px; color: #8b949e; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+  .stat-card .value { font-size: 26px; font-weight: 700; }
+  .stat-card .sub { font-size: 11px; color: #8b949e; margin-top: 2px; }
+
+  .controls {
+    display: flex; gap: 8px; padding: 12px 40px; flex-wrap: wrap; align-items: center;
+  }
+  .controls label { font-size: 13px; color: #8b949e; margin-right: 4px; }
+  .btn-group {
+    display: inline-flex; border: 1px solid #30363d; border-radius: 6px; overflow: hidden;
+  }
+  .btn-group button {
+    background: #21262d; color: #c9d1d9; border: none; padding: 6px 14px;
+    font-size: 13px; cursor: pointer; border-right: 1px solid #30363d; transition: all 0.15s;
+  }
+  .btn-group button:last-child { border-right: none; }
+  .btn-group button:hover { background: #30363d; }
+  .btn-group button.active { background: #1f6feb; color: #fff; }
+
+  .chart-section { padding: 16px 40px 8px; }
+  .chart-wrap {
+    background: #161b22; border: 1px solid #21262d; border-radius: 8px;
+    padding: 20px 24px 16px; position: relative;
+  }
+  .legend-row {
+    display: flex; gap: 18px; justify-content: center; margin-bottom: 12px; flex-wrap: wrap;
+  }
+  .legend-item {
+    display: flex; align-items: center; gap: 6px; font-size: 13px; color: #c9d1d9;
+    cursor: pointer; user-select: none; transition: opacity 0.2s;
+  }
+  .legend-item:hover { opacity: 0.8; }
+  .legend-item.hidden { opacity: 0.3; text-decoration: line-through; }
+  .legend-dot { width: 12px; height: 12px; border-radius: 3px; flex-shrink: 0; }
+
+  canvas { display: block; width: 100%; }
+
+  .tooltip-box {
+    position: absolute; display: none; pointer-events: none; z-index: 10;
+    background: #1c2128; border: 1px solid #30363d; border-radius: 8px;
+    padding: 12px 14px; font-size: 13px; line-height: 1.6;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4); min-width: 240px;
+  }
+  .tooltip-box .tt-title { color: #f0f6fc; font-weight: 600; margin-bottom: 4px; }
+  .tooltip-box .tt-row { display: flex; justify-content: space-between; gap: 16px; }
+  .tooltip-box .tt-dot { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 4px; vertical-align: middle; }
+  .tooltip-box .tt-val { font-weight: 600; color: #f0f6fc; }
+  .tooltip-box .tt-sep { border-top: 1px solid #30363d; margin: 4px 0; }
+
+  .note {
+    padding: 12px 40px 32px; font-size: 12px; color: #484f58; line-height: 1.6; max-width: 900px;
+  }
+  @media (max-width: 768px) {
+    .header, .stats-row, .controls, .chart-section, .note { padding-left: 16px; padding-right: 16px; }
+    .stat-card .value { font-size: 20px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Claude Code Commits on GitHub</h1>
+  <p>Three detection signals tracked via GitHub Search API &middot; Jan 2025 – Mar 2026</p>
+</div>
+
+<div class="stats-row" id="stats-row"></div>
+
+<div class="controls">
+  <label>View:</label>
+  <div class="btn-group" id="view-toggle">
+    <button class="active" data-view="absolute">Monthly Total</button>
+    <button data-view="daily">Daily Average</button>
+    <button data-view="percent">% of All Commits</button>
+  </div>
+  <label style="margin-left:16px">Display:</label>
+  <div class="btn-group" id="display-toggle">
+    <button class="active" data-display="stacked">Stacked Area</button>
+    <button data-display="lines">Separate Lines</button>
+  </div>
+</div>
+
+<div class="chart-section">
+  <div class="chart-wrap">
+    <div class="legend-row" id="legend"></div>
+    <canvas id="chart" height="460"></canvas>
+    <div class="tooltip-box" id="tooltip"></div>
+  </div>
+</div>
+
+<div class="note">
+  <strong>Methodology:</strong> GitHub Search API (<code>/search/commits</code>).
+  Signal A: <code>claude.ai/code</code> URL in commit message.
+  Signal B: <code>author-name:Claude</code> — Claude as git author (Web).
+  Signal C: <code>"Co-authored-by: Claude"</code> trailer — human author + Claude co-author (CLI).
+  Union = A + B + C − A∩B − A∩C (B∩C ≈ 0).
+  Mar 2026 partial (1st–23rd). GitHub Search API <code>total_count</code> is approximate for large result sets.
+</div>
+
+<script>
+// ======================== DATA ========================
+const RAW = [
+  {m:"2025-01",url:299,author:32654,coauthor:41,ab:0,ac:9,total:97415822,days:31},
+  {m:"2025-02",url:1202,author:19107,coauthor:2516,ab:10,ac:956,total:143246907,days:28},
+  {m:"2025-03",url:19397,author:17963,coauthor:19571,ab:447,ac:18748,total:125524357,days:31},
+  {m:"2025-04",url:16727,author:17955,coauthor:16955,ab:486,ac:16228,total:118608178,days:30},
+  {m:"2025-05",url:44320,author:19416,coauthor:45605,ab:781,ac:42805,total:127561844,days:31},
+  {m:"2025-06",url:260711,author:35600,coauthor:271892,ab:8117,ac:255401,total:116858056,days:30},
+  {m:"2025-07",url:475871,author:49511,coauthor:495488,ab:11916,ac:467377,total:129904804,days:31},
+  {m:"2025-08",url:588327,author:51152,coauthor:633947,ab:11131,ac:576504,total:129516628,days:31},
+  {m:"2025-09",url:501496,author:47372,coauthor:600481,ab:10481,ac:487538,total:139044584,days:30},
+  {m:"2025-10",url:124242,author:132260,coauthor:1038145,ab:6282,ac:53301,total:142907985,days:31},
+  {m:"2025-11",url:114645,author:816375,coauthor:1222081,ab:6792,ac:32068,total:149715712,days:30},
+  {m:"2025-12",url:120322,author:511674,coauthor:1626567,ab:3664,ac:27747,total:143734865,days:31},
+  {m:"2026-01",url:202293,author:605862,coauthor:3259835,ab:103192,ac:29008,total:154236344,days:31},
+  {m:"2026-02",url:687897,author:720316,coauthor:5415161,ab:575707,ac:47990,total:158225965,days:28},
+  {m:"2026-03",url:757485,author:832019,coauthor:6670327,ab:671440,ac:31704,total:158724118,days:23},
+];
+
+const D = RAW.map(r => {
+  const union = r.url + r.author + r.coauthor - r.ab - r.ac;
+  const urlX = Math.max(0, r.url - r.ab - r.ac);
+  const authX = Math.max(0, r.author - r.ab);
+  const coauthX = Math.max(0, r.coauthor - r.ac);
+  return { ...r, union, urlX, authX, coauthX };
+});
+
+// ======================== CONFIG ========================
+const COLORS = {
+  coauthor:  { fill: 'rgba(121,192,255,0.45)', stroke: '#79c0ff', name: 'C: Co-Authored-By (CLI)' },
+  author:    { fill: 'rgba(210,168,255,0.45)', stroke: '#d2a8ff', name: 'B: author=Claude (Web)' },
+  url:       { fill: 'rgba(247,129,102,0.45)', stroke: '#f78166', name: 'A: claude.ai/code URL' },
+  union:     { fill: 'rgba(86,211,100,0.15)',   stroke: '#56d364', name: 'Union (A∪B∪C)' },
+  totalBars: { fill: 'rgba(139,148,158,0.18)',  stroke: 'rgba(139,148,158,0.35)', name: 'GitHub Total Commits (right axis)' },
+};
+const SERIES_KEYS = ['coauthor', 'author', 'url']; // draw order: bottom to top
+let view = 'absolute', display = 'stacked';
+const hidden = new Set();
+
+// ======================== STATS ========================
+function fmt(n) {
+  if (n >= 1e6) return (n / 1e6).toFixed(2) + 'M';
+  if (n >= 1e3) return (n / 1e3).toFixed(1) + 'K';
+  return n.toLocaleString();
+}
+const last = D[D.length - 1];
+document.getElementById('stats-row').innerHTML = [
+  ['signal-url',      'Signal A: URL',          fmt(last.url),      `${fmt(Math.round(last.url/last.days))}/day`, '#f78166'],
+  ['signal-author',   'Signal B: Author',       fmt(last.author),   `${fmt(Math.round(last.author/last.days))}/day`, '#d2a8ff'],
+  ['signal-coauthor', 'Signal C: Co-Author',    fmt(last.coauthor), `${fmt(Math.round(last.coauthor/last.days))}/day`, '#79c0ff'],
+  ['signal-union',    'Union',                   fmt(last.union),    `${fmt(Math.round(last.union/last.days))}/day`, '#56d364'],
+  ['signal-pct',      '% of all commits',        (last.union / last.total * 100).toFixed(2) + '%', 'Feb 2026 (partial)', '#e3b341'],
+].map(([cls, label, value, sub, color]) =>
+  `<div class="stat-card"><div class="label">${label}</div><div class="value" style="color:${color}">${value}</div><div class="sub">${sub}</div></div>`
+).join('');
+
+// ======================== CHART ENGINE ========================
+const canvas = document.getElementById('chart');
+const ctx = canvas.getContext('2d');
+const tooltip = document.getElementById('tooltip');
+const dpr = window.devicePixelRatio || 1;
+let W, H, hoverIdx = -1;
+
+function resize() {
+  const rect = canvas.parentElement.getBoundingClientRect();
+  W = rect.width - 48;
+  H = 460;
+  canvas.width = (W + 48) * dpr;
+  canvas.height = H * dpr;
+  canvas.style.height = H + 'px';
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+
+function getValues(key, d) {
+  if (view === 'percent') {
+    if (display === 'stacked') return d[key + 'X'] / d.total * 100;
+    return d[key] / d.total * 100;
+  }
+  const raw = display === 'stacked' ? d[key + 'X'] : d[key];
+  return view === 'daily' ? raw / d.days : raw;
+}
+
+function getUnionVal(d) {
+  const u = d.union;
+  if (view === 'percent') return u / d.total * 100;
+  return view === 'daily' ? u / d.days : u;
+}
+
+function computeStack() {
+  // For stacked: cumulative from bottom; for lines: individual
+  const n = D.length;
+  const layers = {}; // key -> [val, ...]
+  const activeKeys = SERIES_KEYS.filter(k => !hidden.has(k));
+
+  activeKeys.forEach(k => { layers[k] = D.map(d => getValues(k, d)); });
+
+  if (display === 'stacked') {
+    // Cumulative
+    const cumBottom = {}; // key -> [bottom, ...]
+    const cumTop = {};
+    let running = new Array(n).fill(0);
+    activeKeys.forEach(k => {
+      cumBottom[k] = [...running];
+      cumTop[k] = running.map((v, i) => v + layers[k][i]);
+      running = cumTop[k].slice();
+    });
+    return { activeKeys, layers, cumBottom, cumTop, maxVal: Math.max(...running, 0.001) };
+  } else {
+    // Lines mode
+    let allVals = [];
+    activeKeys.forEach(k => { allVals.push(...layers[k]); });
+    if (!hidden.has('union')) {
+      const unionVals = D.map(d => getUnionVal(d));
+      layers['union'] = unionVals;
+      allVals.push(...unionVals);
+    }
+    return { activeKeys: hidden.has('union') ? activeKeys : [...activeKeys, 'union'], layers, maxVal: Math.max(...allVals, 0.001) };
+  }
+}
+
+function draw() {
+  resize();
+  const padL = 72, padR = 72, padT = 10, padB = 40;
+  const fullW = W + 48;
+  const cw = fullW - padL - padR;
+  const ch = H - padT - padB;
+  const n = D.length;
+  const showBars = !hidden.has('totalBars') && view !== 'percent';
+
+  ctx.clearRect(0, 0, canvas.width / dpr, canvas.height / dpr);
+
+  const stack = computeStack();
+  const maxVal = stack.maxVal * 1.12;
+
+  // Right axis: total commits
+  const totalVals = D.map(d => view === 'daily' ? d.total / d.days : d.total);
+  const maxTotal = Math.max(...totalVals) * 1.12;
+
+  function xPos(i) { return padL + (i / (n - 1)) * cw; }
+  function yPos(v) { return padT + ch - (v / maxVal) * ch; }
+  function yPosR(v) { return padT + ch - (v / maxTotal) * ch; }
+
+  // Grid lines + LEFT Y labels (Claude commits)
+  const nTicks = 6;
+  ctx.strokeStyle = '#21262d';
+  ctx.lineWidth = 1;
+  ctx.fillStyle = '#8b949e';
+  ctx.font = '12px -apple-system, sans-serif';
+  ctx.textAlign = 'right';
+  for (let i = 0; i <= nTicks; i++) {
+    const v = (maxVal / nTicks) * i;
+    const y = yPos(v);
+    ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(padL + cw, y); ctx.stroke();
+    let label;
+    if (view === 'percent') label = v.toFixed(v < 0.1 ? 3 : v < 1 ? 2 : 1) + '%';
+    else if (v >= 1e6) label = (v / 1e6).toFixed(1) + 'M';
+    else if (v >= 1e3) label = (v / 1e3).toFixed(0) + 'K';
+    else label = Math.round(v).toString();
+    ctx.fillText(label, padL - 8, y + 4);
+  }
+
+  // RIGHT Y labels (total commits) — only in non-percent mode
+  if (view !== 'percent') {
+    ctx.textAlign = 'left';
+    ctx.fillStyle = 'rgba(139,148,158,0.6)';
+    for (let i = 0; i <= nTicks; i++) {
+      const v = (maxTotal / nTicks) * i;
+      const y = yPosR(v);
+      let label;
+      if (v >= 1e6) label = (v / 1e6).toFixed(0) + 'M';
+      else if (v >= 1e3) label = (v / 1e3).toFixed(0) + 'K';
+      else label = Math.round(v).toString();
+      ctx.fillText(label, padL + cw + 8, y + 4);
+    }
+  }
+
+  // X labels
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#8b949e';
+  D.forEach((d, i) => {
+    const x = xPos(i);
+    ctx.strokeStyle = '#21262d'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(x, padT); ctx.lineTo(x, padT + ch); ctx.stroke();
+    const parts = d.m.split('-');
+    const label = i % 2 === 0 || n <= 8 ? parts[0].slice(2) + '/' + parts[1] : '';
+    if (label) ctx.fillText(label, x, padT + ch + 20);
+  });
+
+  // ---- BARS: Total commits (draw FIRST so they sit behind lines/areas) ----
+  if (showBars) {
+    const barW = Math.max(8, (cw / n) * 0.55);
+    D.forEach((d, i) => {
+      const x = xPos(i);
+      const val = totalVals[i];
+      const barH = (val / maxTotal) * ch;
+      const barX = x - barW / 2;
+      const barY = padT + ch - barH;
+
+      // Fill
+      ctx.fillStyle = COLORS.totalBars.fill;
+      ctx.fillRect(barX, barY, barW, barH);
+      // Stroke
+      ctx.strokeStyle = COLORS.totalBars.stroke;
+      ctx.lineWidth = 1;
+      ctx.strokeRect(barX, barY, barW, barH);
+
+      // Highlight hovered bar
+      if (hoverIdx === i) {
+        ctx.fillStyle = 'rgba(139,148,158,0.12)';
+        ctx.fillRect(barX, barY, barW, barH);
+      }
+    });
+  }
+
+  // ---- AREA / LINES: Claude signals ----
+  if (display === 'stacked') {
+    stack.activeKeys.forEach(key => {
+      const bot = stack.cumBottom[key];
+      const top = stack.cumTop[key];
+      const c = COLORS[key];
+
+      ctx.beginPath();
+      for (let i = 0; i < n; i++) {
+        const x = xPos(i), y = yPos(top[i]);
+        i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+      }
+      for (let i = n - 1; i >= 0; i--) {
+        ctx.lineTo(xPos(i), yPos(bot[i]));
+      }
+      ctx.closePath();
+      ctx.fillStyle = c.fill;
+      ctx.fill();
+
+      ctx.beginPath();
+      for (let i = 0; i < n; i++) {
+        const x = xPos(i), y = yPos(top[i]);
+        i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+      }
+      ctx.strokeStyle = c.stroke;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      for (let i = 0; i < n; i++) {
+        ctx.beginPath();
+        ctx.arc(xPos(i), yPos(top[i]), 3.5, 0, Math.PI * 2);
+        ctx.fillStyle = c.stroke;
+        ctx.fill();
+      }
+    });
+  } else {
+    stack.activeKeys.forEach(key => {
+      const vals = stack.layers[key];
+      const c = COLORS[key];
+      ctx.beginPath();
+      for (let i = 0; i < n; i++) {
+        const x = xPos(i), y = yPos(vals[i]);
+        i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+      }
+      ctx.strokeStyle = c.stroke;
+      ctx.lineWidth = key === 'union' ? 2.5 : 2;
+      if (key === 'union') ctx.setLineDash([6, 4]);
+      else ctx.setLineDash([]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      for (let i = 0; i < n; i++) {
+        ctx.beginPath();
+        ctx.arc(xPos(i), yPos(vals[i]), key === 'union' ? 4 : 3.5, 0, Math.PI * 2);
+        ctx.fillStyle = c.stroke;
+        ctx.fill();
+      }
+    });
+  }
+
+  // Hover column highlight
+  if (hoverIdx >= 0 && hoverIdx < n) {
+    const x = xPos(hoverIdx);
+    ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(x, padT); ctx.lineTo(x, padT + ch); ctx.stroke();
+  }
+
+  // LEFT Y axis label
+  ctx.save();
+  ctx.translate(14, padT + ch / 2);
+  ctx.rotate(-Math.PI / 2);
+  ctx.fillStyle = '#8b949e';
+  ctx.font = '12px -apple-system, sans-serif';
+  ctx.textAlign = 'center';
+  const yLabel = view === 'percent' ? '% of all public commits'
+    : view === 'daily' ? 'Claude commits / day' : 'Claude commits (monthly)';
+  ctx.fillText(yLabel, 0, 0);
+  ctx.restore();
+
+  // RIGHT Y axis label
+  if (view !== 'percent') {
+    ctx.save();
+    ctx.translate(fullW - 10, padT + ch / 2);
+    ctx.rotate(Math.PI / 2);
+    ctx.fillStyle = 'rgba(139,148,158,0.6)';
+    ctx.font = '12px -apple-system, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(view === 'daily' ? 'All GitHub commits / day' : 'All GitHub commits (monthly)', 0, 0);
+    ctx.restore();
+  }
+}
+
+// ======================== TOOLTIP ========================
+function fmtTip(v) {
+  if (view === 'percent') return v.toFixed(3) + '%';
+  if (v >= 1e6) return (v / 1e6).toFixed(2) + 'M';
+  if (v >= 1e3) return Math.round(v).toLocaleString();
+  return Math.round(v).toString();
+}
+
+canvas.addEventListener('mousemove', e => {
+  const rect = canvas.getBoundingClientRect();
+  const mx = e.clientX - rect.left;
+  const padL = 72, padR = 72;
+  const cw = rect.width - padL - padR;
+  const n = D.length;
+  const frac = (mx - padL) / cw;
+  const idx = Math.round(frac * (n - 1));
+
+  if (idx < 0 || idx >= n || frac < -0.02 || frac > 1.02) {
+    hoverIdx = -1;
+    tooltip.style.display = 'none';
+    draw();
+    return;
+  }
+
+  hoverIdx = idx;
+  draw();
+
+  const d = D[idx];
+  const activeKeys = SERIES_KEYS.filter(k => !hidden.has(k));
+
+  let html = `<div class="tt-title">${d.m} (${d.days} days)</div>`;
+  // Show in reverse order (top signal first)
+  [...activeKeys].reverse().forEach(k => {
+    const v = getValues(k, d);
+    const raw = d[k];
+    const c = COLORS[k];
+    html += `<div class="tt-row"><span><span class="tt-dot" style="background:${c.stroke}"></span>${c.name}</span><span class="tt-val">${fmtTip(v)}</span></div>`;
+  });
+  html += `<div class="tt-sep"></div>`;
+  html += `<div class="tt-row"><span style="color:#56d364">Union total</span><span class="tt-val" style="color:#56d364">${fmtTip(getUnionVal(d))}</span></div>`;
+  const totalVal = view === 'daily' ? d.total / d.days : d.total;
+  html += `<div class="tt-row" style="color:#8b949e"><span><span class="tt-dot" style="background:rgba(139,148,158,0.5)"></span>GitHub Total</span><span class="tt-val" style="color:#8b949e">${fmtTip(totalVal)}</span></div>`;
+  html += `<div class="tt-sep"></div>`;
+  html += `<div class="tt-row" style="color:#e3b341"><span>Claude share</span><span class="tt-val" style="color:#e3b341">${(d.union / d.total * 100).toFixed(3)}%</span></div>`;
+
+  tooltip.innerHTML = html;
+  tooltip.style.display = 'block';
+
+  // Position tooltip
+  const chartWrap = canvas.parentElement.getBoundingClientRect();
+  let tx = e.clientX - chartWrap.left + 16;
+  let ty = e.clientY - chartWrap.top - 20;
+  if (tx + 260 > chartWrap.width) tx = tx - 280;
+  if (ty < 0) ty = 10;
+  tooltip.style.left = tx + 'px';
+  tooltip.style.top = ty + 'px';
+});
+
+canvas.addEventListener('mouseleave', () => {
+  hoverIdx = -1;
+  tooltip.style.display = 'none';
+  draw();
+});
+
+// ======================== LEGEND ========================
+function renderLegend() {
+  const el = document.getElementById('legend');
+  const lineKeys = display === 'stacked' ? [...SERIES_KEYS] : [...SERIES_KEYS, 'union'];
+  const keys = [...lineKeys, 'totalBars'];
+  el.innerHTML = keys.map(k => {
+    const c = COLORS[k];
+    const cls = hidden.has(k) ? 'legend-item hidden' : 'legend-item';
+    return `<div class="${cls}" data-key="${k}"><span class="legend-dot" style="background:${c.stroke}"></span>${c.name}</div>`;
+  }).join('');
+
+  el.querySelectorAll('.legend-item').forEach(item => {
+    item.addEventListener('click', () => {
+      const k = item.dataset.key;
+      hidden.has(k) ? hidden.delete(k) : hidden.add(k);
+      renderLegend();
+      draw();
+    });
+  });
+}
+
+// ======================== CONTROLS ========================
+document.querySelectorAll('#view-toggle button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#view-toggle button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    view = btn.dataset.view;
+    draw();
+  });
+});
+document.querySelectorAll('#display-toggle button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#display-toggle button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    display = btn.dataset.display;
+    renderLegend();
+    draw();
+  });
+});
+
+window.addEventListener('resize', draw);
+renderLegend();
+draw();
+</script>
+</body>
+</html>

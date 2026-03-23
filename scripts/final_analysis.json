@@ -1,0 +1,158 @@
+{
+  "data": [
+    {
+      "month": "2025-01",
+      "total_commits": 97337577,
+      "daily_avg_total": 3139922,
+      "claude_by_url": 302,
+      "claude_by_author": 18,
+      "claude_best_estimate": 302,
+      "daily_avg_claude": 10,
+      "percentage": 0.0003,
+      "days": 31
+    },
+    {
+      "month": "2025-02",
+      "total_commits": 142134524,
+      "daily_avg_total": 5076233,
+      "claude_by_url": 1225,
+      "claude_by_author": 19,
+      "claude_best_estimate": 1225,
+      "daily_avg_claude": 44,
+      "percentage": 0.0009,
+      "days": 28
+    },
+    {
+      "month": "2025-03",
+      "total_commits": 125463225,
+      "daily_avg_total": 4047201,
+      "claude_by_url": 19540,
+      "claude_by_author": 267,
+      "claude_best_estimate": 19540,
+      "daily_avg_claude": 630,
+      "percentage": 0.0156,
+      "days": 31
+    },
+    {
+      "month": "2025-04",
+      "total_commits": 118550915,
+      "daily_avg_total": 3951697,
+      "claude_by_url": 16850,
+      "claude_by_author": 293,
+      "claude_best_estimate": 16850,
+      "daily_avg_claude": 562,
+      "percentage": 0.0142,
+      "days": 30
+    },
+    {
+      "month": "2025-05",
+      "total_commits": 127520825,
+      "daily_avg_total": 4113575,
+      "claude_by_url": 44480,
+      "claude_by_author": 425,
+      "claude_best_estimate": 44480,
+      "daily_avg_claude": 1435,
+      "percentage": 0.0349,
+      "days": 31
+    },
+    {
+      "month": "2025-06",
+      "total_commits": 116835145,
+      "daily_avg_total": 3894505,
+      "claude_by_url": 261044,
+      "claude_by_author": 3560,
+      "claude_best_estimate": 261044,
+      "daily_avg_claude": 8701,
+      "percentage": 0.2234,
+      "days": 30
+    },
+    {
+      "month": "2025-07",
+      "total_commits": 129891837,
+      "daily_avg_total": 4190059,
+      "claude_by_url": 476554,
+      "claude_by_author": 5705,
+      "claude_best_estimate": 476554,
+      "daily_avg_claude": 15373,
+      "percentage": 0.3669,
+      "days": 31
+    },
+    {
+      "month": "2025-08",
+      "total_commits": 129447274,
+      "daily_avg_total": 4175719,
+      "claude_by_url": 590189,
+      "claude_by_author": 7578,
+      "claude_best_estimate": 590189,
+      "daily_avg_claude": 19038,
+      "percentage": 0.4559,
+      "days": 31
+    },
+    {
+      "month": "2025-09",
+      "total_commits": 139002495,
+      "daily_avg_total": 4633416,
+      "claude_by_url": 502289,
+      "claude_by_author": 7295,
+      "claude_best_estimate": 502289,
+      "daily_avg_claude": 16743,
+      "percentage": 0.3614,
+      "days": 30
+    },
+    {
+      "month": "2025-10",
+      "total_commits": 142887531,
+      "daily_avg_total": 4609275,
+      "claude_by_url": 123848,
+      "claude_by_author": 89327,
+      "claude_best_estimate": 123848,
+      "daily_avg_claude": 3995,
+      "percentage": 0.0867,
+      "days": 31
+    },
+    {
+      "month": "2025-11",
+      "total_commits": 149692399,
+      "daily_avg_total": 4989747,
+      "claude_by_url": 114158,
+      "claude_by_author": 764897,
+      "claude_best_estimate": 764897,
+      "daily_avg_claude": 25497,
+      "percentage": 0.511,
+      "days": 30
+    },
+    {
+      "month": "2025-12",
+      "total_commits": 143537188,
+      "daily_avg_total": 4630232,
+      "claude_by_url": 119923,
+      "claude_by_author": 457177,
+      "claude_best_estimate": 457177,
+      "daily_avg_claude": 14748,
+      "percentage": 0.3185,
+      "days": 31
+    },
+    {
+      "month": "2026-01",
+      "total_commits": 153756997,
+      "daily_avg_total": 4959903,
+      "claude_by_url": 201103,
+      "claude_by_author": 541990,
+      "claude_best_estimate": 541990,
+      "daily_avg_claude": 17484,
+      "percentage": 0.3525,
+      "days": 31
+    },
+    {
+      "month": "2026-02",
+      "total_commits": 71306444,
+      "daily_avg_total": 5093317,
+      "claude_by_url": 306270,
+      "claude_by_author": 281018,
+      "claude_best_estimate": 306270,
+      "daily_avg_claude": 21876,
+      "percentage": 0.4295,
+      "days": 14
+    }
+  ]
+}
