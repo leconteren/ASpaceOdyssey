@@ -88,7 +88,7 @@
 
 <div class="header">
   <h1>Claude Code Commits on GitHub</h1>
-  <p>Three detection signals tracked via GitHub Search API &middot; Jan 2025 – Feb 2026</p>
+  <p>Three detection signals tracked via GitHub Search API &middot; Jan 2025 – Mar 2026</p>
 </div>
 
 <div class="stats-row" id="stats-row"></div>
@@ -121,7 +121,7 @@
   Signal B: <code>author-name:Claude</code> — Claude as git author (Web).
   Signal C: <code>"Co-authored-by: Claude"</code> trailer — human author + Claude co-author (CLI).
   Union = A + B + C − A∩B − A∩C (B∩C ≈ 0).
-  Feb 2026 partial (1st–17th). GitHub Search API <code>total_count</code> is approximate for large result sets.
+  Mar 2026 partial (1st–23rd). GitHub Search API <code>total_count</code> is approximate for large result sets.
 </div>
 
 <script>
@@ -140,7 +140,8 @@ const RAW = [
   {m:"2025-11",url:114645,author:816375,coauthor:1222081,ab:6792,ac:32068,total:149715712,days:30},
   {m:"2025-12",url:120322,author:511674,coauthor:1626567,ab:3664,ac:27747,total:143734865,days:31},
   {m:"2026-01",url:202293,author:605862,coauthor:3259835,ab:103192,ac:29008,total:154236344,days:31},
-  {m:"2026-02",url:355085,author:373204,coauthor:2538260,ab:301319,ac:24363,total:90165862,days:17},
+  {m:"2026-02",url:687897,author:720316,coauthor:5415161,ab:575707,ac:47990,total:158225965,days:28},
+  {m:"2026-03",url:757485,author:832019,coauthor:6670327,ab:671440,ac:31704,total:158724118,days:23},
 ];
 
 const D = RAW.map(r => {
