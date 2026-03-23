@@ -6,6 +6,9 @@ on:
     paths:
       - 'public/dashboard.html'
       - '.github/workflows/deploy-pages.yml'
+  workflow_run:
+    workflows: ["Update Data & Deploy Dashboard"]
+    types: [completed]
   workflow_dispatch:
 
 permissions:
