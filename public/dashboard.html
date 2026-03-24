@@ -115,13 +115,58 @@
   </div>
 </div>
 
-<div class="note">
+<div class="note" id="note1">
   <strong>Methodology:</strong> GitHub Search API (<code>/search/commits</code>).
   Signal A: <code>claude.ai/code</code> URL in commit message.
   Signal B: <code>author-name:Claude</code> — Claude as git author (Web).
   Signal C: <code>"Co-authored-by: Claude"</code> trailer — human author + Claude co-author (CLI).
   Union = A + B + C − A∩B − A∩C (B∩C ≈ 0).
   Mar 2026 partial (1st–23rd). GitHub Search API <code>total_count</code> is approximate for large result sets.
+</div>
+
+<!-- ======================== VS CODE INSTALLS CHART ======================== -->
+<div class="header" style="margin-top: 16px;">
+  <h1>VS Code Extension Daily Installs</h1>
+  <p>30-day moving average &middot; Source: <a href="https://bloomberry.com/coding-tools.html" style="color:#58a6ff" target="_blank">Bloomberry.com</a></p>
+</div>
+
+<div class="stats-row" id="stats-row2"></div>
+
+<div class="chart-section">
+  <div class="chart-wrap">
+    <div class="legend-row" id="legend2"></div>
+    <canvas id="chart2" height="400"></canvas>
+    <div class="tooltip-box" id="tooltip2"></div>
+  </div>
+</div>
+
+<div class="note">
+  <strong>Data source:</strong> Bloomberry.com VS Code Marketplace tracking.
+  Values are 30-day moving averages of daily install counts, sampled every ~10 days.
+  Data read from published chart; minor rounding may apply.
+</div>
+
+<!-- ======================== NPM DOWNLOADS CHART ======================== -->
+<div class="header" style="margin-top: 16px;">
+  <h1>npm Weekly Downloads</h1>
+  <p>Live data from npm registry API &middot; Updated on page load</p>
+</div>
+
+<div class="stats-row" id="stats-row3"></div>
+
+<div class="chart-section">
+  <div class="chart-wrap">
+    <div class="legend-row" id="legend3"></div>
+    <canvas id="chart3" height="400"></canvas>
+    <div class="tooltip-box" id="tooltip3"></div>
+    <div id="npm-loading" style="text-align:center;color:#8b949e;padding:60px 0;font-size:14px;">Loading npm download data...</div>
+  </div>
+</div>
+
+<div class="note">
+  <strong>Data source:</strong> <a href="https://github.com/npm/registry/blob/main/docs/download-counts.md" style="color:#58a6ff" target="_blank">npm registry downloads API</a> (public, no auth required).
+  Shows weekly download counts aggregated from daily data. Packages tracked:
+  <code>@anthropic-ai/claude-code</code>, <code>@openai/codex</code>, <code>@githubnext/github-copilot-cli</code>.
 </div>
 
 <script>
@@ -539,6 +584,475 @@ document.querySelectorAll('#display-toggle button').forEach(btn => {
 window.addEventListener('resize', draw);
 renderLegend();
 draw();
+
+// ======================== VS CODE INSTALLS DATA ========================
+// Data extracted from Bloomberry.com chart (30-day moving avg of daily installs)
+const VSCODE = [
+  {d:"2025-03-07",claude:0,codex:0},
+  {d:"2025-03-17",claude:0,codex:0},
+  {d:"2025-03-27",claude:0,codex:0},
+  {d:"2025-04-06",claude:0,codex:6000},
+  {d:"2025-04-16",claude:0,codex:6500},
+  {d:"2025-04-26",claude:0,codex:6500},
+  {d:"2025-05-06",claude:0,codex:6000},
+  {d:"2025-05-16",claude:0,codex:5500},
+  {d:"2025-05-26",claude:0,codex:5000},
+  {d:"2025-06-05",claude:0,codex:3500},
+  {d:"2025-06-15",claude:0,codex:2500},
+  {d:"2025-06-25",claude:0,codex:1500},
+  {d:"2025-07-05",claude:0,codex:800},
+  {d:"2025-07-15",claude:0,codex:1000},
+  {d:"2025-07-25",claude:8000,codex:2000},
+  {d:"2025-08-04",claude:8500,codex:2500},
+  {d:"2025-08-14",claude:9000,codex:3000},
+  {d:"2025-08-24",claude:9000,codex:5000},
+  {d:"2025-09-03",claude:9500,codex:7500},
+  {d:"2025-09-13",claude:10000,codex:9000},
+  {d:"2025-09-23",claude:13000,codex:12000},
+  {d:"2025-10-03",claude:10000,codex:17500},
+  {d:"2025-10-13",claude:10500,codex:18000},
+  {d:"2025-10-23",claude:12000,codex:19000},
+  {d:"2025-11-02",claude:13000,codex:20000},
+  {d:"2025-11-12",claude:14000,codex:20500},
+  {d:"2025-11-22",claude:15000,codex:22000},
+  {d:"2025-12-02",claude:16000,codex:22500},
+  {d:"2025-12-12",claude:17000,codex:22000},
+  {d:"2025-12-22",claude:17500,codex:21000},
+  {d:"2026-01-01",claude:17000,codex:18000},
+  {d:"2026-01-11",claude:17500,codex:18500},
+  {d:"2026-01-21",claude:18000,codex:19000},
+  {d:"2026-01-31",claude:19000,codex:18500},
+  {d:"2026-02-10",claude:22000,codex:17000},
+  {d:"2026-02-20",claude:35000,codex:17500},
+  {d:"2026-03-02",claude:55000,codex:50000},
+  {d:"2026-03-12",claude:72000,codex:53000},
+  {d:"2026-03-22",claude:91000,codex:46000},
+];
+
+const VSCODE_COLORS = {
+  claude: { stroke: '#58d5c2', fill: 'rgba(88,213,194,0.15)', name: 'Claude Code' },
+  codex:  { stroke: '#f5c242', fill: 'rgba(245,194,66,0.15)', name: 'OpenAI Codex' },
+};
+
+// Stats cards
+const lastV = VSCODE[VSCODE.length - 1];
+document.getElementById('stats-row2').innerHTML = [
+  ['Claude Code', lastV.claude.toLocaleString() + '/day', 'Latest 30d avg', '#58d5c2'],
+  ['OpenAI Codex', lastV.codex.toLocaleString() + '/day', 'Latest 30d avg', '#f5c242'],
+  ['Lead', (lastV.claude > lastV.codex ? '+' : '') + ((lastV.claude - lastV.codex) / 1000).toFixed(0) + 'K/day', lastV.claude > lastV.codex ? 'Claude leads' : 'Codex leads', lastV.claude > lastV.codex ? '#56d364' : '#f78166'],
+].map(([label, value, sub, color]) =>
+  `<div class="stat-card"><div class="label">${label}</div><div class="value" style="color:${color}">${value}</div><div class="sub">${sub}</div></div>`
+).join('');
+
+// Chart 2
+const canvas2 = document.getElementById('chart2');
+const ctx2 = canvas2.getContext('2d');
+const tooltip2 = document.getElementById('tooltip2');
+let hoverIdx2 = -1;
+const hidden2 = new Set();
+
+function draw2() {
+  const rect2 = canvas2.parentElement.getBoundingClientRect();
+  const W2 = rect2.width - 48;
+  const H2 = 400;
+  canvas2.width = (W2 + 48) * dpr;
+  canvas2.height = H2 * dpr;
+  canvas2.style.height = H2 + 'px';
+  ctx2.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+  const padL = 72, padR = 24, padT = 10, padB = 50;
+  const fullW = W2 + 48;
+  const cw = fullW - padL - padR;
+  const ch = H2 - padT - padB;
+  const n = VSCODE.length;
+
+  ctx2.clearRect(0, 0, fullW, H2);
+
+  const allVals = [];
+  if (!hidden2.has('claude')) VSCODE.forEach(v => allVals.push(v.claude));
+  if (!hidden2.has('codex')) VSCODE.forEach(v => allVals.push(v.codex));
+  const maxVal = (Math.max(...allVals, 1000)) * 1.12;
+
+  function xP(i) { return padL + (i / (n - 1)) * cw; }
+  function yP(v) { return padT + ch - (v / maxVal) * ch; }
+
+  // Grid
+  const nTicks = 5;
+  ctx2.font = '12px -apple-system, sans-serif';
+  for (let i = 0; i <= nTicks; i++) {
+    const v = (maxVal / nTicks) * i;
+    const y = yP(v);
+    ctx2.strokeStyle = '#21262d'; ctx2.lineWidth = 1;
+    ctx2.beginPath(); ctx2.moveTo(padL, y); ctx2.lineTo(padL + cw, y); ctx2.stroke();
+    ctx2.fillStyle = '#8b949e'; ctx2.textAlign = 'right';
+    ctx2.fillText((v / 1000).toFixed(0) + 'K', padL - 8, y + 4);
+  }
+
+  // X labels
+  ctx2.textAlign = 'center'; ctx2.fillStyle = '#8b949e';
+  VSCODE.forEach((v, i) => {
+    const x = xP(i);
+    ctx2.strokeStyle = '#21262d'; ctx2.lineWidth = 1;
+    ctx2.beginPath(); ctx2.moveTo(x, padT); ctx2.lineTo(x, padT + ch); ctx2.stroke();
+    if (i % 4 === 0 || i === n - 1) {
+      ctx2.save(); ctx2.translate(x, padT + ch + 14);
+      ctx2.rotate(-Math.PI / 6);
+      ctx2.fillText(v.d, 0, 0);
+      ctx2.restore();
+    }
+  });
+
+  // Lines
+  ['claude', 'codex'].forEach(key => {
+    if (hidden2.has(key)) return;
+    const c = VSCODE_COLORS[key];
+
+    // Area fill
+    ctx2.beginPath();
+    for (let i = 0; i < n; i++) {
+      const x = xP(i), y = yP(VSCODE[i][key]);
+      i === 0 ? ctx2.moveTo(x, y) : ctx2.lineTo(x, y);
+    }
+    ctx2.lineTo(xP(n - 1), yP(0));
+    ctx2.lineTo(xP(0), yP(0));
+    ctx2.closePath();
+    ctx2.fillStyle = c.fill;
+    ctx2.fill();
+
+    // Line
+    ctx2.beginPath();
+    for (let i = 0; i < n; i++) {
+      const x = xP(i), y = yP(VSCODE[i][key]);
+      i === 0 ? ctx2.moveTo(x, y) : ctx2.lineTo(x, y);
+    }
+    ctx2.strokeStyle = c.stroke;
+    ctx2.lineWidth = 2.5;
+    ctx2.stroke();
+
+    // Dots
+    for (let i = 0; i < n; i++) {
+      ctx2.beginPath();
+      ctx2.arc(xP(i), yP(VSCODE[i][key]), 3, 0, Math.PI * 2);
+      ctx2.fillStyle = c.stroke;
+      ctx2.fill();
+    }
+  });
+
+  // Hover
+  if (hoverIdx2 >= 0 && hoverIdx2 < n) {
+    const x = xP(hoverIdx2);
+    ctx2.strokeStyle = 'rgba(255,255,255,0.15)';
+    ctx2.lineWidth = 1;
+    ctx2.beginPath(); ctx2.moveTo(x, padT); ctx2.lineTo(x, padT + ch); ctx2.stroke();
+  }
+
+  // Y axis label
+  ctx2.save();
+  ctx2.translate(14, padT + ch / 2);
+  ctx2.rotate(-Math.PI / 2);
+  ctx2.fillStyle = '#8b949e'; ctx2.font = '12px -apple-system, sans-serif';
+  ctx2.textAlign = 'center';
+  ctx2.fillText('Daily installs (30d moving avg)', 0, 0);
+  ctx2.restore();
+}
+
+// Legend 2
+function renderLegend2() {
+  const el = document.getElementById('legend2');
+  el.innerHTML = ['claude', 'codex'].map(k => {
+    const c = VSCODE_COLORS[k];
+    const cls = hidden2.has(k) ? 'legend-item hidden' : 'legend-item';
+    return `<div class="${cls}" data-key="${k}"><span class="legend-dot" style="background:${c.stroke}"></span>${c.name}</div>`;
+  }).join('');
+  el.querySelectorAll('.legend-item').forEach(item => {
+    item.addEventListener('click', () => {
+      const k = item.dataset.key;
+      hidden2.has(k) ? hidden2.delete(k) : hidden2.add(k);
+      renderLegend2(); draw2();
+    });
+  });
+}
+
+// Tooltip 2
+canvas2.addEventListener('mousemove', e => {
+  const rect = canvas2.getBoundingClientRect();
+  const mx = e.clientX - rect.left;
+  const padL = 72, padR = 24;
+  const cw2 = rect.width - padL - padR;
+  const n = VSCODE.length;
+  const frac = (mx - padL) / cw2;
+  const idx = Math.round(frac * (n - 1));
+  if (idx < 0 || idx >= n || frac < -0.02 || frac > 1.02) {
+    hoverIdx2 = -1; tooltip2.style.display = 'none'; draw2(); return;
+  }
+  hoverIdx2 = idx; draw2();
+  const v = VSCODE[idx];
+  let html = `<div class="tt-title">${v.d}</div>`;
+  ['claude', 'codex'].forEach(k => {
+    if (hidden2.has(k)) return;
+    const c = VSCODE_COLORS[k];
+    html += `<div class="tt-row"><span><span class="tt-dot" style="background:${c.stroke}"></span>${c.name}</span><span class="tt-val">${v[k].toLocaleString()}/day</span></div>`;
+  });
+  if (!hidden2.has('claude') && !hidden2.has('codex')) {
+    html += `<div class="tt-sep"></div>`;
+    const diff = v.claude - v.codex;
+    const leader = diff > 0 ? 'Claude' : 'Codex';
+    html += `<div class="tt-row" style="color:${diff > 0 ? '#56d364' : '#f78166'}"><span>${leader} leads by</span><span class="tt-val">${Math.abs(diff).toLocaleString()}/day</span></div>`;
+  }
+  tooltip2.innerHTML = html;
+  tooltip2.style.display = 'block';
+  const chartWrap = canvas2.parentElement.getBoundingClientRect();
+  let tx = e.clientX - chartWrap.left + 16;
+  let ty = e.clientY - chartWrap.top - 20;
+  if (tx + 260 > chartWrap.width) tx -= 280;
+  if (ty < 0) ty = 10;
+  tooltip2.style.left = tx + 'px';
+  tooltip2.style.top = ty + 'px';
+});
+canvas2.addEventListener('mouseleave', () => {
+  hoverIdx2 = -1; tooltip2.style.display = 'none'; draw2();
+});
+
+window.addEventListener('resize', draw2);
+renderLegend2();
+draw2();
+
+// ======================== NPM DOWNLOADS (LIVE FETCH) ========================
+const NPM_PACKAGES = [
+  { key: 'claude', pkg: '@anthropic-ai/claude-code', name: 'Claude Code', stroke: '#58d5c2', fill: 'rgba(88,213,194,0.15)' },
+  { key: 'codex', pkg: '@openai/codex', name: 'OpenAI Codex CLI', stroke: '#f5c242', fill: 'rgba(245,194,66,0.15)' },
+  { key: 'copilot', pkg: '@githubnext/github-copilot-cli', name: 'GitHub Copilot CLI', stroke: '#a371f7', fill: 'rgba(163,113,247,0.15)' },
+];
+
+async function fetchNpmData() {
+  const today = new Date().toISOString().split('T')[0];
+  const start = '2025-01-01';
+
+  const results = await Promise.all(NPM_PACKAGES.map(async p => {
+    try {
+      const url = `https://api.npmjs.org/downloads/range/${start}:${today}/${p.pkg}`;
+      const resp = await fetch(url);
+      if (!resp.ok) throw new Error(resp.statusText);
+      const data = await resp.json();
+      return { key: p.key, downloads: data.downloads || [] };
+    } catch (e) {
+      console.error(`Failed to fetch ${p.pkg}:`, e);
+      return { key: p.key, downloads: [] };
+    }
+  }));
+
+  // Aggregate daily data into weekly buckets
+  const dailyMap = {}; // date -> { claude: n, codex: n, copilot: n }
+  results.forEach(r => {
+    r.downloads.forEach(d => {
+      if (!dailyMap[d.day]) dailyMap[d.day] = { claude: 0, codex: 0, copilot: 0 };
+      dailyMap[d.day][r.key] = d.downloads;
+    });
+  });
+
+  const sortedDays = Object.keys(dailyMap).sort();
+  if (sortedDays.length === 0) return null;
+
+  // Group into weeks (Mon-Sun)
+  const weeks = [];
+  let weekStart = null, weekData = { claude: 0, codex: 0, copilot: 0 };
+  sortedDays.forEach(day => {
+    const dow = new Date(day + 'T00:00:00').getDay(); // 0=Sun
+    if (dow === 1 && weekStart) {
+      weeks.push({ week: weekStart, ...weekData });
+      weekData = { claude: 0, codex: 0, copilot: 0 };
+      weekStart = day;
+    }
+    if (!weekStart) weekStart = day;
+    weekData.claude += dailyMap[day].claude;
+    weekData.codex += dailyMap[day].codex;
+    weekData.copilot += dailyMap[day].copilot;
+  });
+  if (weekStart) weeks.push({ week: weekStart, ...weekData });
+
+  return weeks;
+}
+
+async function initNpmChart() {
+  const weeks = await fetchNpmData();
+  const loadingEl = document.getElementById('npm-loading');
+
+  if (!weeks || weeks.length === 0) {
+    loadingEl.textContent = 'Failed to load npm data. Try refreshing.';
+    return;
+  }
+  loadingEl.style.display = 'none';
+
+  // Stats
+  const lastW = weeks[weeks.length - 1];
+  document.getElementById('stats-row3').innerHTML = NPM_PACKAGES.map(p => {
+    const val = lastW[p.key];
+    return `<div class="stat-card"><div class="label">${p.name}</div><div class="value" style="color:${p.stroke}">${val.toLocaleString()}</div><div class="sub">Last week downloads</div></div>`;
+  }).join('');
+
+  // Chart
+  const canvas3 = document.getElementById('chart3');
+  const ctx3 = canvas3.getContext('2d');
+  const tooltip3 = document.getElementById('tooltip3');
+  let hoverIdx3 = -1;
+  const hidden3 = new Set();
+
+  function draw3() {
+    const rect3 = canvas3.parentElement.getBoundingClientRect();
+    const W3 = rect3.width - 48;
+    const H3 = 400;
+    canvas3.width = (W3 + 48) * dpr;
+    canvas3.height = H3 * dpr;
+    canvas3.style.height = H3 + 'px';
+    ctx3.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    const padL = 72, padR = 24, padT = 10, padB = 50;
+    const fullW = W3 + 48;
+    const cw = fullW - padL - padR;
+    const ch = H3 - padT - padB;
+    const n = weeks.length;
+
+    ctx3.clearRect(0, 0, fullW, H3);
+
+    const allVals = [];
+    NPM_PACKAGES.forEach(p => {
+      if (!hidden3.has(p.key)) weeks.forEach(w => allVals.push(w[p.key]));
+    });
+    const maxVal = Math.max(...allVals, 1000) * 1.12;
+
+    function xP(i) { return padL + (i / (n - 1)) * cw; }
+    function yP(v) { return padT + ch - (v / maxVal) * ch; }
+
+    // Grid
+    const nTicks = 5;
+    ctx3.font = '12px -apple-system, sans-serif';
+    for (let i = 0; i <= nTicks; i++) {
+      const v = (maxVal / nTicks) * i;
+      const y = yP(v);
+      ctx3.strokeStyle = '#21262d'; ctx3.lineWidth = 1;
+      ctx3.beginPath(); ctx3.moveTo(padL, y); ctx3.lineTo(padL + cw, y); ctx3.stroke();
+      ctx3.fillStyle = '#8b949e'; ctx3.textAlign = 'right';
+      let label;
+      if (v >= 1e6) label = (v / 1e6).toFixed(1) + 'M';
+      else if (v >= 1e3) label = (v / 1e3).toFixed(0) + 'K';
+      else label = Math.round(v).toString();
+      ctx3.fillText(label, padL - 8, y + 4);
+    }
+
+    // X labels
+    ctx3.textAlign = 'center'; ctx3.fillStyle = '#8b949e';
+    const labelEvery = Math.max(1, Math.floor(n / 15));
+    weeks.forEach((w, i) => {
+      const x = xP(i);
+      if (i % labelEvery === 0 || i === n - 1) {
+        ctx3.strokeStyle = '#21262d'; ctx3.lineWidth = 1;
+        ctx3.beginPath(); ctx3.moveTo(x, padT); ctx3.lineTo(x, padT + ch); ctx3.stroke();
+        ctx3.save(); ctx3.translate(x, padT + ch + 14);
+        ctx3.rotate(-Math.PI / 6);
+        ctx3.fillText(w.week, 0, 0);
+        ctx3.restore();
+      }
+    });
+
+    // Lines
+    NPM_PACKAGES.forEach(p => {
+      if (hidden3.has(p.key)) return;
+
+      // Area
+      ctx3.beginPath();
+      for (let i = 0; i < n; i++) {
+        const x = xP(i), y = yP(weeks[i][p.key]);
+        i === 0 ? ctx3.moveTo(x, y) : ctx3.lineTo(x, y);
+      }
+      ctx3.lineTo(xP(n - 1), yP(0));
+      ctx3.lineTo(xP(0), yP(0));
+      ctx3.closePath();
+      ctx3.fillStyle = p.fill;
+      ctx3.fill();
+
+      // Line
+      ctx3.beginPath();
+      for (let i = 0; i < n; i++) {
+        const x = xP(i), y = yP(weeks[i][p.key]);
+        i === 0 ? ctx3.moveTo(x, y) : ctx3.lineTo(x, y);
+      }
+      ctx3.strokeStyle = p.stroke;
+      ctx3.lineWidth = 2;
+      ctx3.stroke();
+    });
+
+    // Hover
+    if (hoverIdx3 >= 0 && hoverIdx3 < n) {
+      const x = xP(hoverIdx3);
+      ctx3.strokeStyle = 'rgba(255,255,255,0.15)'; ctx3.lineWidth = 1;
+      ctx3.beginPath(); ctx3.moveTo(x, padT); ctx3.lineTo(x, padT + ch); ctx3.stroke();
+    }
+
+    // Y label
+    ctx3.save();
+    ctx3.translate(14, padT + ch / 2);
+    ctx3.rotate(-Math.PI / 2);
+    ctx3.fillStyle = '#8b949e'; ctx3.font = '12px -apple-system, sans-serif';
+    ctx3.textAlign = 'center';
+    ctx3.fillText('Weekly downloads', 0, 0);
+    ctx3.restore();
+  }
+
+  // Legend
+  function renderLegend3() {
+    const el = document.getElementById('legend3');
+    el.innerHTML = NPM_PACKAGES.map(p => {
+      const cls = hidden3.has(p.key) ? 'legend-item hidden' : 'legend-item';
+      return `<div class="${cls}" data-key="${p.key}"><span class="legend-dot" style="background:${p.stroke}"></span>${p.name}</div>`;
+    }).join('');
+    el.querySelectorAll('.legend-item').forEach(item => {
+      item.addEventListener('click', () => {
+        const k = item.dataset.key;
+        hidden3.has(k) ? hidden3.delete(k) : hidden3.add(k);
+        renderLegend3(); draw3();
+      });
+    });
+  }
+
+  // Tooltip
+  canvas3.addEventListener('mousemove', e => {
+    const rect = canvas3.getBoundingClientRect();
+    const mx = e.clientX - rect.left;
+    const padL = 72, padR = 24;
+    const cw3 = rect.width - padL - padR;
+    const n = weeks.length;
+    const frac = (mx - padL) / cw3;
+    const idx = Math.round(frac * (n - 1));
+    if (idx < 0 || idx >= n || frac < -0.02 || frac > 1.02) {
+      hoverIdx3 = -1; tooltip3.style.display = 'none'; draw3(); return;
+    }
+    hoverIdx3 = idx; draw3();
+    const w = weeks[idx];
+    let html = `<div class="tt-title">Week of ${w.week}</div>`;
+    NPM_PACKAGES.forEach(p => {
+      if (hidden3.has(p.key)) return;
+      html += `<div class="tt-row"><span><span class="tt-dot" style="background:${p.stroke}"></span>${p.name}</span><span class="tt-val">${w[p.key].toLocaleString()}</span></div>`;
+    });
+    tooltip3.innerHTML = html;
+    tooltip3.style.display = 'block';
+    const chartWrap = canvas3.parentElement.getBoundingClientRect();
+    let tx = e.clientX - chartWrap.left + 16;
+    let ty = e.clientY - chartWrap.top - 20;
+    if (tx + 260 > chartWrap.width) tx -= 280;
+    if (ty < 0) ty = 10;
+    tooltip3.style.left = tx + 'px';
+    tooltip3.style.top = ty + 'px';
+  });
+  canvas3.addEventListener('mouseleave', () => {
+    hoverIdx3 = -1; tooltip3.style.display = 'none'; draw3();
+  });
+
+  window.addEventListener('resize', draw3);
+  renderLegend3();
+  draw3();
+}
+
+initNpmChart();
 </script>
 </body>
 </html>
