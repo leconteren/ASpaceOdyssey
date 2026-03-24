@@ -148,7 +148,7 @@
 
 <!-- ======================== NPM DOWNLOADS CHART ======================== -->
 <div class="header" style="margin-top: 16px;">
-  <h1>npm Weekly Downloads</h1>
+  <h1>npm Daily Downloads</h1>
   <p>Live data from npm registry API &middot; Updated on page load</p>
 </div>
 
@@ -165,7 +165,7 @@
 
 <div class="note">
   <strong>Data source:</strong> <a href="https://github.com/npm/registry/blob/main/docs/download-counts.md" style="color:#58a6ff" target="_blank">npm registry downloads API</a> (public, no auth required).
-  Shows weekly download counts aggregated from daily data. Packages tracked:
+  Shows raw daily download counts. Packages tracked:
   <code>@anthropic-ai/claude-code</code>, <code>@openai/codex</code>, <code>@githubnext/github-copilot-cli</code>.
 </div>
 
@@ -841,8 +841,8 @@ async function fetchNpmData() {
     }
   }));
 
-  // Aggregate daily data into weekly buckets
-  const dailyMap = {}; // date -> { claude: n, codex: n, copilot: n }
+  // Build daily map
+  const dailyMap = {};
   results.forEach(r => {
     r.downloads.forEach(d => {
       if (!dailyMap[d.day]) dailyMap[d.day] = { claude: 0, codex: 0, copilot: 0 };
@@ -853,41 +853,24 @@ async function fetchNpmData() {
   const sortedDays = Object.keys(dailyMap).sort();
   if (sortedDays.length === 0) return null;
 
-  // Group into weeks (Mon-Sun)
-  const weeks = [];
-  let weekStart = null, weekData = { claude: 0, codex: 0, copilot: 0 };
-  sortedDays.forEach(day => {
-    const dow = new Date(day + 'T00:00:00').getDay(); // 0=Sun
-    if (dow === 1 && weekStart) {
-      weeks.push({ week: weekStart, ...weekData });
-      weekData = { claude: 0, codex: 0, copilot: 0 };
-      weekStart = day;
-    }
-    if (!weekStart) weekStart = day;
-    weekData.claude += dailyMap[day].claude;
-    weekData.codex += dailyMap[day].codex;
-    weekData.copilot += dailyMap[day].copilot;
-  });
-  if (weekStart) weeks.push({ week: weekStart, ...weekData });
-
-  return weeks;
+  return sortedDays.map(day => ({ day, ...dailyMap[day] }));
 }
 
 async function initNpmChart() {
-  const weeks = await fetchNpmData();
+  const days = await fetchNpmData();
   const loadingEl = document.getElementById('npm-loading');
 
-  if (!weeks || weeks.length === 0) {
+  if (!days || days.length === 0) {
     loadingEl.textContent = 'Failed to load npm data. Try refreshing.';
     return;
   }
   loadingEl.style.display = 'none';
 
-  // Stats
-  const lastW = weeks[weeks.length - 1];
+  // Stats — show latest day
+  const lastD = days[days.length - 1];
   document.getElementById('stats-row3').innerHTML = NPM_PACKAGES.map(p => {
-    const val = lastW[p.key];
-    return `<div class="stat-card"><div class="label">${p.name}</div><div class="value" style="color:${p.stroke}">${val.toLocaleString()}</div><div class="sub">Last week downloads</div></div>`;
+    const val = lastD[p.key];
+    return `<div class="stat-card"><div class="label">${p.name}</div><div class="value" style="color:${p.stroke}">${val.toLocaleString()}</div><div class="sub">Latest daily downloads</div></div>`;
   }).join('');
 
   // Chart
@@ -910,13 +893,13 @@ async function initNpmChart() {
     const fullW = W3 + 48;
     const cw = fullW - padL - padR;
     const ch = H3 - padT - padB;
-    const n = weeks.length;
+    const n = days.length;
 
     ctx3.clearRect(0, 0, fullW, H3);
 
     const allVals = [];
     NPM_PACKAGES.forEach(p => {
-      if (!hidden3.has(p.key)) weeks.forEach(w => allVals.push(w[p.key]));
+      if (!hidden3.has(p.key)) days.forEach(d => allVals.push(d[p.key]));
     });
     const maxVal = Math.max(...allVals, 1000) * 1.12;
 
@@ -942,14 +925,14 @@ async function initNpmChart() {
     // X labels
     ctx3.textAlign = 'center'; ctx3.fillStyle = '#8b949e';
     const labelEvery = Math.max(1, Math.floor(n / 15));
-    weeks.forEach((w, i) => {
+    days.forEach((d, i) => {
       const x = xP(i);
       if (i % labelEvery === 0 || i === n - 1) {
         ctx3.strokeStyle = '#21262d'; ctx3.lineWidth = 1;
         ctx3.beginPath(); ctx3.moveTo(x, padT); ctx3.lineTo(x, padT + ch); ctx3.stroke();
         ctx3.save(); ctx3.translate(x, padT + ch + 14);
         ctx3.rotate(-Math.PI / 6);
-        ctx3.fillText(w.week, 0, 0);
+        ctx3.fillText(d.day, 0, 0);
         ctx3.restore();
       }
     });
@@ -961,7 +944,7 @@ async function initNpmChart() {
       // Area
       ctx3.beginPath();
       for (let i = 0; i < n; i++) {
-        const x = xP(i), y = yP(weeks[i][p.key]);
+        const x = xP(i), y = yP(days[i][p.key]);
         i === 0 ? ctx3.moveTo(x, y) : ctx3.lineTo(x, y);
       }
       ctx3.lineTo(xP(n - 1), yP(0));
@@ -973,7 +956,7 @@ async function initNpmChart() {
       // Line
       ctx3.beginPath();
       for (let i = 0; i < n; i++) {
-        const x = xP(i), y = yP(weeks[i][p.key]);
+        const x = xP(i), y = yP(days[i][p.key]);
         i === 0 ? ctx3.moveTo(x, y) : ctx3.lineTo(x, y);
       }
       ctx3.strokeStyle = p.stroke;
@@ -994,7 +977,7 @@ async function initNpmChart() {
     ctx3.rotate(-Math.PI / 2);
     ctx3.fillStyle = '#8b949e'; ctx3.font = '12px -apple-system, sans-serif';
     ctx3.textAlign = 'center';
-    ctx3.fillText('Weekly downloads', 0, 0);
+    ctx3.fillText('Daily downloads', 0, 0);
     ctx3.restore();
   }
 
@@ -1020,18 +1003,18 @@ async function initNpmChart() {
     const mx = e.clientX - rect.left;
     const padL = 72, padR = 24;
     const cw3 = rect.width - padL - padR;
-    const n = weeks.length;
+    const n = days.length;
     const frac = (mx - padL) / cw3;
     const idx = Math.round(frac * (n - 1));
     if (idx < 0 || idx >= n || frac < -0.02 || frac > 1.02) {
       hoverIdx3 = -1; tooltip3.style.display = 'none'; draw3(); return;
     }
     hoverIdx3 = idx; draw3();
-    const w = weeks[idx];
-    let html = `<div class="tt-title">Week of ${w.week}</div>`;
+    const d = days[idx];
+    let html = `<div class="tt-title">${d.day}</div>`;
     NPM_PACKAGES.forEach(p => {
       if (hidden3.has(p.key)) return;
-      html += `<div class="tt-row"><span><span class="tt-dot" style="background:${p.stroke}"></span>${p.name}</span><span class="tt-val">${w[p.key].toLocaleString()}</span></div>`;
+      html += `<div class="tt-row"><span><span class="tt-dot" style="background:${p.stroke}"></span>${p.name}</span><span class="tt-val">${d[p.key].toLocaleString()}</span></div>`;
     });
     tooltip3.innerHTML = html;
     tooltip3.style.display = 'block';
