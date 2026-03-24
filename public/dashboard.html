@@ -115,13 +115,35 @@
   </div>
 </div>
 
-<div class="note">
+<div class="note" id="note1">
   <strong>Methodology:</strong> GitHub Search API (<code>/search/commits</code>).
   Signal A: <code>claude.ai/code</code> URL in commit message.
   Signal B: <code>author-name:Claude</code> — Claude as git author (Web).
   Signal C: <code>"Co-authored-by: Claude"</code> trailer — human author + Claude co-author (CLI).
   Union = A + B + C − A∩B − A∩C (B∩C ≈ 0).
   Mar 2026 partial (1st–23rd). GitHub Search API <code>total_count</code> is approximate for large result sets.
+</div>
+
+<!-- ======================== VS CODE INSTALLS CHART ======================== -->
+<div class="header" style="margin-top: 16px;">
+  <h1>VS Code Extension Daily Installs</h1>
+  <p>30-day moving average &middot; Source: <a href="https://bloomberry.com/coding-tools.html" style="color:#58a6ff" target="_blank">Bloomberry.com</a></p>
+</div>
+
+<div class="stats-row" id="stats-row2"></div>
+
+<div class="chart-section">
+  <div class="chart-wrap">
+    <div class="legend-row" id="legend2"></div>
+    <canvas id="chart2" height="400"></canvas>
+    <div class="tooltip-box" id="tooltip2"></div>
+  </div>
+</div>
+
+<div class="note">
+  <strong>Data source:</strong> Bloomberry.com VS Code Marketplace tracking.
+  Values are 30-day moving averages of daily install counts, sampled every ~10 days.
+  Data read from published chart; minor rounding may apply.
 </div>
 
 <script>
@@ -539,6 +561,238 @@ document.querySelectorAll('#display-toggle button').forEach(btn => {
 window.addEventListener('resize', draw);
 renderLegend();
 draw();
+
+// ======================== VS CODE INSTALLS DATA ========================
+// Data extracted from Bloomberry.com chart (30-day moving avg of daily installs)
+const VSCODE = [
+  {d:"2025-03-07",claude:0,codex:0},
+  {d:"2025-03-17",claude:0,codex:0},
+  {d:"2025-03-27",claude:0,codex:0},
+  {d:"2025-04-06",claude:0,codex:6000},
+  {d:"2025-04-16",claude:0,codex:6500},
+  {d:"2025-04-26",claude:0,codex:6500},
+  {d:"2025-05-06",claude:0,codex:6000},
+  {d:"2025-05-16",claude:0,codex:5500},
+  {d:"2025-05-26",claude:0,codex:5000},
+  {d:"2025-06-05",claude:0,codex:3500},
+  {d:"2025-06-15",claude:0,codex:2500},
+  {d:"2025-06-25",claude:0,codex:1500},
+  {d:"2025-07-05",claude:0,codex:800},
+  {d:"2025-07-15",claude:0,codex:1000},
+  {d:"2025-07-25",claude:8000,codex:2000},
+  {d:"2025-08-04",claude:8500,codex:2500},
+  {d:"2025-08-14",claude:9000,codex:3000},
+  {d:"2025-08-24",claude:9000,codex:5000},
+  {d:"2025-09-03",claude:9500,codex:7500},
+  {d:"2025-09-13",claude:10000,codex:9000},
+  {d:"2025-09-23",claude:13000,codex:12000},
+  {d:"2025-10-03",claude:10000,codex:17500},
+  {d:"2025-10-13",claude:10500,codex:18000},
+  {d:"2025-10-23",claude:12000,codex:19000},
+  {d:"2025-11-02",claude:13000,codex:20000},
+  {d:"2025-11-12",claude:14000,codex:20500},
+  {d:"2025-11-22",claude:15000,codex:22000},
+  {d:"2025-12-02",claude:16000,codex:22500},
+  {d:"2025-12-12",claude:17000,codex:22000},
+  {d:"2025-12-22",claude:17500,codex:21000},
+  {d:"2026-01-01",claude:17000,codex:18000},
+  {d:"2026-01-11",claude:17500,codex:18500},
+  {d:"2026-01-21",claude:18000,codex:19000},
+  {d:"2026-01-31",claude:19000,codex:18500},
+  {d:"2026-02-10",claude:22000,codex:17000},
+  {d:"2026-02-20",claude:35000,codex:17500},
+  {d:"2026-03-02",claude:55000,codex:50000},
+  {d:"2026-03-12",claude:72000,codex:53000},
+  {d:"2026-03-22",claude:91000,codex:46000},
+];
+
+const VSCODE_COLORS = {
+  claude: { stroke: '#58d5c2', fill: 'rgba(88,213,194,0.15)', name: 'Claude Code' },
+  codex:  { stroke: '#f5c242', fill: 'rgba(245,194,66,0.15)', name: 'OpenAI Codex' },
+};
+
+// Stats cards
+const lastV = VSCODE[VSCODE.length - 1];
+document.getElementById('stats-row2').innerHTML = [
+  ['Claude Code', lastV.claude.toLocaleString() + '/day', 'Latest 30d avg', '#58d5c2'],
+  ['OpenAI Codex', lastV.codex.toLocaleString() + '/day', 'Latest 30d avg', '#f5c242'],
+  ['Lead', (lastV.claude > lastV.codex ? '+' : '') + ((lastV.claude - lastV.codex) / 1000).toFixed(0) + 'K/day', lastV.claude > lastV.codex ? 'Claude leads' : 'Codex leads', lastV.claude > lastV.codex ? '#56d364' : '#f78166'],
+].map(([label, value, sub, color]) =>
+  `<div class="stat-card"><div class="label">${label}</div><div class="value" style="color:${color}">${value}</div><div class="sub">${sub}</div></div>`
+).join('');
+
+// Chart 2
+const canvas2 = document.getElementById('chart2');
+const ctx2 = canvas2.getContext('2d');
+const tooltip2 = document.getElementById('tooltip2');
+let hoverIdx2 = -1;
+const hidden2 = new Set();
+
+function draw2() {
+  const rect2 = canvas2.parentElement.getBoundingClientRect();
+  const W2 = rect2.width - 48;
+  const H2 = 400;
+  canvas2.width = (W2 + 48) * dpr;
+  canvas2.height = H2 * dpr;
+  canvas2.style.height = H2 + 'px';
+  ctx2.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+  const padL = 72, padR = 24, padT = 10, padB = 50;
+  const fullW = W2 + 48;
+  const cw = fullW - padL - padR;
+  const ch = H2 - padT - padB;
+  const n = VSCODE.length;
+
+  ctx2.clearRect(0, 0, fullW, H2);
+
+  const allVals = [];
+  if (!hidden2.has('claude')) VSCODE.forEach(v => allVals.push(v.claude));
+  if (!hidden2.has('codex')) VSCODE.forEach(v => allVals.push(v.codex));
+  const maxVal = (Math.max(...allVals, 1000)) * 1.12;
+
+  function xP(i) { return padL + (i / (n - 1)) * cw; }
+  function yP(v) { return padT + ch - (v / maxVal) * ch; }
+
+  // Grid
+  const nTicks = 5;
+  ctx2.font = '12px -apple-system, sans-serif';
+  for (let i = 0; i <= nTicks; i++) {
+    const v = (maxVal / nTicks) * i;
+    const y = yP(v);
+    ctx2.strokeStyle = '#21262d'; ctx2.lineWidth = 1;
+    ctx2.beginPath(); ctx2.moveTo(padL, y); ctx2.lineTo(padL + cw, y); ctx2.stroke();
+    ctx2.fillStyle = '#8b949e'; ctx2.textAlign = 'right';
+    ctx2.fillText((v / 1000).toFixed(0) + 'K', padL - 8, y + 4);
+  }
+
+  // X labels
+  ctx2.textAlign = 'center'; ctx2.fillStyle = '#8b949e';
+  VSCODE.forEach((v, i) => {
+    const x = xP(i);
+    ctx2.strokeStyle = '#21262d'; ctx2.lineWidth = 1;
+    ctx2.beginPath(); ctx2.moveTo(x, padT); ctx2.lineTo(x, padT + ch); ctx2.stroke();
+    if (i % 4 === 0 || i === n - 1) {
+      ctx2.save(); ctx2.translate(x, padT + ch + 14);
+      ctx2.rotate(-Math.PI / 6);
+      ctx2.fillText(v.d, 0, 0);
+      ctx2.restore();
+    }
+  });
+
+  // Lines
+  ['claude', 'codex'].forEach(key => {
+    if (hidden2.has(key)) return;
+    const c = VSCODE_COLORS[key];
+
+    // Area fill
+    ctx2.beginPath();
+    for (let i = 0; i < n; i++) {
+      const x = xP(i), y = yP(VSCODE[i][key]);
+      i === 0 ? ctx2.moveTo(x, y) : ctx2.lineTo(x, y);
+    }
+    ctx2.lineTo(xP(n - 1), yP(0));
+    ctx2.lineTo(xP(0), yP(0));
+    ctx2.closePath();
+    ctx2.fillStyle = c.fill;
+    ctx2.fill();
+
+    // Line
+    ctx2.beginPath();
+    for (let i = 0; i < n; i++) {
+      const x = xP(i), y = yP(VSCODE[i][key]);
+      i === 0 ? ctx2.moveTo(x, y) : ctx2.lineTo(x, y);
+    }
+    ctx2.strokeStyle = c.stroke;
+    ctx2.lineWidth = 2.5;
+    ctx2.stroke();
+
+    // Dots
+    for (let i = 0; i < n; i++) {
+      ctx2.beginPath();
+      ctx2.arc(xP(i), yP(VSCODE[i][key]), 3, 0, Math.PI * 2);
+      ctx2.fillStyle = c.stroke;
+      ctx2.fill();
+    }
+  });
+
+  // Hover
+  if (hoverIdx2 >= 0 && hoverIdx2 < n) {
+    const x = xP(hoverIdx2);
+    ctx2.strokeStyle = 'rgba(255,255,255,0.15)';
+    ctx2.lineWidth = 1;
+    ctx2.beginPath(); ctx2.moveTo(x, padT); ctx2.lineTo(x, padT + ch); ctx2.stroke();
+  }
+
+  // Y axis label
+  ctx2.save();
+  ctx2.translate(14, padT + ch / 2);
+  ctx2.rotate(-Math.PI / 2);
+  ctx2.fillStyle = '#8b949e'; ctx2.font = '12px -apple-system, sans-serif';
+  ctx2.textAlign = 'center';
+  ctx2.fillText('Daily installs (30d moving avg)', 0, 0);
+  ctx2.restore();
+}
+
+// Legend 2
+function renderLegend2() {
+  const el = document.getElementById('legend2');
+  el.innerHTML = ['claude', 'codex'].map(k => {
+    const c = VSCODE_COLORS[k];
+    const cls = hidden2.has(k) ? 'legend-item hidden' : 'legend-item';
+    return `<div class="${cls}" data-key="${k}"><span class="legend-dot" style="background:${c.stroke}"></span>${c.name}</div>`;
+  }).join('');
+  el.querySelectorAll('.legend-item').forEach(item => {
+    item.addEventListener('click', () => {
+      const k = item.dataset.key;
+      hidden2.has(k) ? hidden2.delete(k) : hidden2.add(k);
+      renderLegend2(); draw2();
+    });
+  });
+}
+
+// Tooltip 2
+canvas2.addEventListener('mousemove', e => {
+  const rect = canvas2.getBoundingClientRect();
+  const mx = e.clientX - rect.left;
+  const padL = 72, padR = 24;
+  const cw2 = rect.width - padL - padR;
+  const n = VSCODE.length;
+  const frac = (mx - padL) / cw2;
+  const idx = Math.round(frac * (n - 1));
+  if (idx < 0 || idx >= n || frac < -0.02 || frac > 1.02) {
+    hoverIdx2 = -1; tooltip2.style.display = 'none'; draw2(); return;
+  }
+  hoverIdx2 = idx; draw2();
+  const v = VSCODE[idx];
+  let html = `<div class="tt-title">${v.d}</div>`;
+  ['claude', 'codex'].forEach(k => {
+    if (hidden2.has(k)) return;
+    const c = VSCODE_COLORS[k];
+    html += `<div class="tt-row"><span><span class="tt-dot" style="background:${c.stroke}"></span>${c.name}</span><span class="tt-val">${v[k].toLocaleString()}/day</span></div>`;
+  });
+  if (!hidden2.has('claude') && !hidden2.has('codex')) {
+    html += `<div class="tt-sep"></div>`;
+    const diff = v.claude - v.codex;
+    const leader = diff > 0 ? 'Claude' : 'Codex';
+    html += `<div class="tt-row" style="color:${diff > 0 ? '#56d364' : '#f78166'}"><span>${leader} leads by</span><span class="tt-val">${Math.abs(diff).toLocaleString()}/day</span></div>`;
+  }
+  tooltip2.innerHTML = html;
+  tooltip2.style.display = 'block';
+  const chartWrap = canvas2.parentElement.getBoundingClientRect();
+  let tx = e.clientX - chartWrap.left + 16;
+  let ty = e.clientY - chartWrap.top - 20;
+  if (tx + 260 > chartWrap.width) tx -= 280;
+  if (ty < 0) ty = 10;
+  tooltip2.style.left = tx + 'px';
+  tooltip2.style.top = ty + 'px';
+});
+canvas2.addEventListener('mouseleave', () => {
+  hoverIdx2 = -1; tooltip2.style.display = 'none'; draw2();
+});
+
+window.addEventListener('resize', draw2);
+renderLegend2();
+draw2();
 </script>
 </body>
 </html>
