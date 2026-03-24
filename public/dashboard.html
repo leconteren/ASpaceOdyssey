@@ -146,6 +146,29 @@
   Data read from published chart; minor rounding may apply.
 </div>
 
+<!-- ======================== NPM DOWNLOADS CHART ======================== -->
+<div class="header" style="margin-top: 16px;">
+  <h1>npm Weekly Downloads</h1>
+  <p>Live data from npm registry API &middot; Updated on page load</p>
+</div>
+
+<div class="stats-row" id="stats-row3"></div>
+
+<div class="chart-section">
+  <div class="chart-wrap">
+    <div class="legend-row" id="legend3"></div>
+    <canvas id="chart3" height="400"></canvas>
+    <div class="tooltip-box" id="tooltip3"></div>
+    <div id="npm-loading" style="text-align:center;color:#8b949e;padding:60px 0;font-size:14px;">Loading npm download data...</div>
+  </div>
+</div>
+
+<div class="note">
+  <strong>Data source:</strong> <a href="https://github.com/npm/registry/blob/main/docs/download-counts.md" style="color:#58a6ff" target="_blank">npm registry downloads API</a> (public, no auth required).
+  Shows weekly download counts aggregated from daily data. Packages tracked:
+  <code>@anthropic-ai/claude-code</code>, <code>@openai/codex</code>, <code>@githubnext/github-copilot-cli</code>.
+</div>
+
 <script>
 // ======================== DATA ========================
 const RAW = [
@@ -793,6 +816,243 @@ canvas2.addEventListener('mouseleave', () => {
 window.addEventListener('resize', draw2);
 renderLegend2();
 draw2();
+
+// ======================== NPM DOWNLOADS (LIVE FETCH) ========================
+const NPM_PACKAGES = [
+  { key: 'claude', pkg: '@anthropic-ai/claude-code', name: 'Claude Code', stroke: '#58d5c2', fill: 'rgba(88,213,194,0.15)' },
+  { key: 'codex', pkg: '@openai/codex', name: 'OpenAI Codex CLI', stroke: '#f5c242', fill: 'rgba(245,194,66,0.15)' },
+  { key: 'copilot', pkg: '@githubnext/github-copilot-cli', name: 'GitHub Copilot CLI', stroke: '#a371f7', fill: 'rgba(163,113,247,0.15)' },
+];
+
+async function fetchNpmData() {
+  const today = new Date().toISOString().split('T')[0];
+  const start = '2025-01-01';
+
+  const results = await Promise.all(NPM_PACKAGES.map(async p => {
+    try {
+      const url = `https://api.npmjs.org/downloads/range/${start}:${today}/${p.pkg}`;
+      const resp = await fetch(url);
+      if (!resp.ok) throw new Error(resp.statusText);
+      const data = await resp.json();
+      return { key: p.key, downloads: data.downloads || [] };
+    } catch (e) {
+      console.error(`Failed to fetch ${p.pkg}:`, e);
+      return { key: p.key, downloads: [] };
+    }
+  }));
+
+  // Aggregate daily data into weekly buckets
+  const dailyMap = {}; // date -> { claude: n, codex: n, copilot: n }
+  results.forEach(r => {
+    r.downloads.forEach(d => {
+      if (!dailyMap[d.day]) dailyMap[d.day] = { claude: 0, codex: 0, copilot: 0 };
+      dailyMap[d.day][r.key] = d.downloads;
+    });
+  });
+
+  const sortedDays = Object.keys(dailyMap).sort();
+  if (sortedDays.length === 0) return null;
+
+  // Group into weeks (Mon-Sun)
+  const weeks = [];
+  let weekStart = null, weekData = { claude: 0, codex: 0, copilot: 0 };
+  sortedDays.forEach(day => {
+    const dow = new Date(day + 'T00:00:00').getDay(); // 0=Sun
+    if (dow === 1 && weekStart) {
+      weeks.push({ week: weekStart, ...weekData });
+      weekData = { claude: 0, codex: 0, copilot: 0 };
+      weekStart = day;
+    }
+    if (!weekStart) weekStart = day;
+    weekData.claude += dailyMap[day].claude;
+    weekData.codex += dailyMap[day].codex;
+    weekData.copilot += dailyMap[day].copilot;
+  });
+  if (weekStart) weeks.push({ week: weekStart, ...weekData });
+
+  return weeks;
+}
+
+async function initNpmChart() {
+  const weeks = await fetchNpmData();
+  const loadingEl = document.getElementById('npm-loading');
+
+  if (!weeks || weeks.length === 0) {
+    loadingEl.textContent = 'Failed to load npm data. Try refreshing.';
+    return;
+  }
+  loadingEl.style.display = 'none';
+
+  // Stats
+  const lastW = weeks[weeks.length - 1];
+  document.getElementById('stats-row3').innerHTML = NPM_PACKAGES.map(p => {
+    const val = lastW[p.key];
+    return `<div class="stat-card"><div class="label">${p.name}</div><div class="value" style="color:${p.stroke}">${val.toLocaleString()}</div><div class="sub">Last week downloads</div></div>`;
+  }).join('');
+
+  // Chart
+  const canvas3 = document.getElementById('chart3');
+  const ctx3 = canvas3.getContext('2d');
+  const tooltip3 = document.getElementById('tooltip3');
+  let hoverIdx3 = -1;
+  const hidden3 = new Set();
+
+  function draw3() {
+    const rect3 = canvas3.parentElement.getBoundingClientRect();
+    const W3 = rect3.width - 48;
+    const H3 = 400;
+    canvas3.width = (W3 + 48) * dpr;
+    canvas3.height = H3 * dpr;
+    canvas3.style.height = H3 + 'px';
+    ctx3.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    const padL = 72, padR = 24, padT = 10, padB = 50;
+    const fullW = W3 + 48;
+    const cw = fullW - padL - padR;
+    const ch = H3 - padT - padB;
+    const n = weeks.length;
+
+    ctx3.clearRect(0, 0, fullW, H3);
+
+    const allVals = [];
+    NPM_PACKAGES.forEach(p => {
+      if (!hidden3.has(p.key)) weeks.forEach(w => allVals.push(w[p.key]));
+    });
+    const maxVal = Math.max(...allVals, 1000) * 1.12;
+
+    function xP(i) { return padL + (i / (n - 1)) * cw; }
+    function yP(v) { return padT + ch - (v / maxVal) * ch; }
+
+    // Grid
+    const nTicks = 5;
+    ctx3.font = '12px -apple-system, sans-serif';
+    for (let i = 0; i <= nTicks; i++) {
+      const v = (maxVal / nTicks) * i;
+      const y = yP(v);
+      ctx3.strokeStyle = '#21262d'; ctx3.lineWidth = 1;
+      ctx3.beginPath(); ctx3.moveTo(padL, y); ctx3.lineTo(padL + cw, y); ctx3.stroke();
+      ctx3.fillStyle = '#8b949e'; ctx3.textAlign = 'right';
+      let label;
+      if (v >= 1e6) label = (v / 1e6).toFixed(1) + 'M';
+      else if (v >= 1e3) label = (v / 1e3).toFixed(0) + 'K';
+      else label = Math.round(v).toString();
+      ctx3.fillText(label, padL - 8, y + 4);
+    }
+
+    // X labels
+    ctx3.textAlign = 'center'; ctx3.fillStyle = '#8b949e';
+    const labelEvery = Math.max(1, Math.floor(n / 15));
+    weeks.forEach((w, i) => {
+      const x = xP(i);
+      if (i % labelEvery === 0 || i === n - 1) {
+        ctx3.strokeStyle = '#21262d'; ctx3.lineWidth = 1;
+        ctx3.beginPath(); ctx3.moveTo(x, padT); ctx3.lineTo(x, padT + ch); ctx3.stroke();
+        ctx3.save(); ctx3.translate(x, padT + ch + 14);
+        ctx3.rotate(-Math.PI / 6);
+        ctx3.fillText(w.week, 0, 0);
+        ctx3.restore();
+      }
+    });
+
+    // Lines
+    NPM_PACKAGES.forEach(p => {
+      if (hidden3.has(p.key)) return;
+
+      // Area
+      ctx3.beginPath();
+      for (let i = 0; i < n; i++) {
+        const x = xP(i), y = yP(weeks[i][p.key]);
+        i === 0 ? ctx3.moveTo(x, y) : ctx3.lineTo(x, y);
+      }
+      ctx3.lineTo(xP(n - 1), yP(0));
+      ctx3.lineTo(xP(0), yP(0));
+      ctx3.closePath();
+      ctx3.fillStyle = p.fill;
+      ctx3.fill();
+
+      // Line
+      ctx3.beginPath();
+      for (let i = 0; i < n; i++) {
+        const x = xP(i), y = yP(weeks[i][p.key]);
+        i === 0 ? ctx3.moveTo(x, y) : ctx3.lineTo(x, y);
+      }
+      ctx3.strokeStyle = p.stroke;
+      ctx3.lineWidth = 2;
+      ctx3.stroke();
+    });
+
+    // Hover
+    if (hoverIdx3 >= 0 && hoverIdx3 < n) {
+      const x = xP(hoverIdx3);
+      ctx3.strokeStyle = 'rgba(255,255,255,0.15)'; ctx3.lineWidth = 1;
+      ctx3.beginPath(); ctx3.moveTo(x, padT); ctx3.lineTo(x, padT + ch); ctx3.stroke();
+    }
+
+    // Y label
+    ctx3.save();
+    ctx3.translate(14, padT + ch / 2);
+    ctx3.rotate(-Math.PI / 2);
+    ctx3.fillStyle = '#8b949e'; ctx3.font = '12px -apple-system, sans-serif';
+    ctx3.textAlign = 'center';
+    ctx3.fillText('Weekly downloads', 0, 0);
+    ctx3.restore();
+  }
+
+  // Legend
+  function renderLegend3() {
+    const el = document.getElementById('legend3');
+    el.innerHTML = NPM_PACKAGES.map(p => {
+      const cls = hidden3.has(p.key) ? 'legend-item hidden' : 'legend-item';
+      return `<div class="${cls}" data-key="${p.key}"><span class="legend-dot" style="background:${p.stroke}"></span>${p.name}</div>`;
+    }).join('');
+    el.querySelectorAll('.legend-item').forEach(item => {
+      item.addEventListener('click', () => {
+        const k = item.dataset.key;
+        hidden3.has(k) ? hidden3.delete(k) : hidden3.add(k);
+        renderLegend3(); draw3();
+      });
+    });
+  }
+
+  // Tooltip
+  canvas3.addEventListener('mousemove', e => {
+    const rect = canvas3.getBoundingClientRect();
+    const mx = e.clientX - rect.left;
+    const padL = 72, padR = 24;
+    const cw3 = rect.width - padL - padR;
+    const n = weeks.length;
+    const frac = (mx - padL) / cw3;
+    const idx = Math.round(frac * (n - 1));
+    if (idx < 0 || idx >= n || frac < -0.02 || frac > 1.02) {
+      hoverIdx3 = -1; tooltip3.style.display = 'none'; draw3(); return;
+    }
+    hoverIdx3 = idx; draw3();
+    const w = weeks[idx];
+    let html = `<div class="tt-title">Week of ${w.week}</div>`;
+    NPM_PACKAGES.forEach(p => {
+      if (hidden3.has(p.key)) return;
+      html += `<div class="tt-row"><span><span class="tt-dot" style="background:${p.stroke}"></span>${p.name}</span><span class="tt-val">${w[p.key].toLocaleString()}</span></div>`;
+    });
+    tooltip3.innerHTML = html;
+    tooltip3.style.display = 'block';
+    const chartWrap = canvas3.parentElement.getBoundingClientRect();
+    let tx = e.clientX - chartWrap.left + 16;
+    let ty = e.clientY - chartWrap.top - 20;
+    if (tx + 260 > chartWrap.width) tx -= 280;
+    if (ty < 0) ty = 10;
+    tooltip3.style.left = tx + 'px';
+    tooltip3.style.top = ty + 'px';
+  });
+  canvas3.addEventListener('mouseleave', () => {
+    hoverIdx3 = -1; tooltip3.style.display = 'none'; draw3();
+  });
+
+  window.addEventListener('resize', draw3);
+  renderLegend3();
+  draw3();
+}
+
+initNpmChart();
 </script>
 </body>
 </html>
