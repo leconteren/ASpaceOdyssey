@@ -2,7 +2,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { User, Post, PredictionEvent, ViewType, PredictionChoice } from './types';
 import { INITIAL_USER, parseInitialPosts } from './constants';
-import { Plus, MessageSquare, TrendingUp, User as UserIcon, LogOut, Send, CheckCircle, Clock } from 'lucide-react';
+import { Plus, MessageSquare, TrendingUp, User as UserIcon, LogOut, Send, CheckCircle, Clock, BarChart3 } from 'lucide-react';
+import DashboardView from './DashboardView';
 
 export default function App() {
   const [currentUser, setCurrentUser] = useState<User | null>(() => {
@@ -202,13 +203,19 @@ export default function App() {
         >
           <MessageSquare size={28} />
         </button>
-        <button 
+        <button
           onClick={() => setActiveView('market')}
           className={`p-3 rounded-2xl transition-all md:mt-8 ${activeView === 'market' ? 'bg-purple-500/20 text-purple-400 monolith-glow' : 'text-slate-400 hover:text-white'}`}
         >
           <TrendingUp size={28} />
         </button>
-        <button 
+        <button
+          onClick={() => setActiveView('dashboard')}
+          className={`p-3 rounded-2xl transition-all md:mt-8 ${activeView === 'dashboard' ? 'bg-emerald-500/20 text-emerald-400 monolith-glow' : 'text-slate-400 hover:text-white'}`}
+        >
+          <BarChart3 size={28} />
+        </button>
+        <button
           onClick={() => setActiveView('profile')}
           className={`p-3 rounded-2xl transition-all md:mt-8 ${activeView === 'profile' ? 'bg-amber-500/20 text-amber-400 monolith-glow' : 'text-slate-400 hover:text-white'}`}
         >
@@ -224,7 +231,7 @@ export default function App() {
       </nav>
 
       <main className="flex-1 overflow-y-auto pb-24 md:pb-0 h-screen scroll-smooth">
-        <div className="max-w-3xl mx-auto px-4 py-8">
+        <div className={`mx-auto px-4 py-8 ${activeView === 'dashboard' ? 'max-w-5xl' : 'max-w-3xl'}`}>
           {activeView === 'feed' && (
             <FeedView 
               posts={posts} 
@@ -240,6 +247,9 @@ export default function App() {
               onSolve={solveEvent}
               currentUser={currentUser} 
             />
+          )}
+          {activeView === 'dashboard' && (
+            <DashboardView />
           )}
           {activeView === 'profile' && (
             <ProfileView 

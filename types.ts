@@ -36,4 +36,27 @@ export interface PredictionEvent {
   votes: Vote[];
 }
 
-export type ViewType = 'feed' | 'market' | 'profile';
+export type ViewType = 'feed' | 'market' | 'profile' | 'dashboard';
+
+export type SignalStatus = 'augmentation' | 'replacement' | 'neutral';
+
+export interface MetricDataPoint {
+  date: string;
+  value: number;
+  value2?: number; // secondary axis (e.g. wage for QCEW)
+}
+
+export interface MetricConfig {
+  id: string;
+  name: string;
+  nameCn: string;
+  source: string;
+  frequency: string;
+  unit: string;
+  unit2?: string;
+  color: string;
+  color2?: string;
+  augmentationDesc: string;
+  replacementDesc: string;
+  chartType: 'line' | 'area' | 'bar' | 'dual-line';
+}
