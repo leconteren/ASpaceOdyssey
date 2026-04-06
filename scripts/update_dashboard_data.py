@@ -121,7 +121,7 @@ def build_raw_js(rows):
             f'coauthor:{r["coauthor"]},ab:{r["ab"]},ac:{r["ac"]},'
             f'total:{r["total"]},days:{r["days"]}}},'
         )
-    return "const RAW = [\n" + "\n".join(lines) + "\n];"
+    return "const RAW_MONTHLY = [\n" + "\n".join(lines) + "\n];"
 
 
 def update_dashboard(new_raw_js):
@@ -130,10 +130,10 @@ def update_dashboard(new_raw_js):
         html = f.read()
 
     # Match the RAW = [...]; block
-    pattern = r"const RAW = \[.*?\];"
+    pattern = r"const RAW_MONTHLY = \[.*?\];"
     match = re.search(pattern, html, re.DOTALL)
     if not match:
-        print("ERROR: Could not find RAW array in dashboard.html", file=sys.stderr)
+        print("ERROR: Could not find RAW_MONTHLY array in dashboard.html", file=sys.stderr)
         sys.exit(1)
 
     html = html[:match.start()] + new_raw_js + html[match.end():]

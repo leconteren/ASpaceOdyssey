@@ -1,6 +1,10 @@
 name: Update Data & Deploy Dashboard
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - 'public/dashboard.html'
   schedule:
     # Run every Monday at 10:00 UTC
     - cron: '0 10 * * 1'
@@ -49,7 +53,7 @@ jobs:
 
   deploy:
     needs: update-data
-    if: needs.update-data.outputs.changed == 'true' || github.event_name == 'workflow_dispatch'
+    if: needs.update-data.outputs.changed == 'true' || github.event_name == 'workflow_dispatch' || github.event_name == 'push'
     runs-on: ubuntu-latest
     environment:
       name: github-pages
