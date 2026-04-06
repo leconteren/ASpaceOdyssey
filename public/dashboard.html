@@ -126,7 +126,7 @@
   Signal B: <code>author-name:Claude</code> — Claude as git author (Web).
   Signal C: <code>"Co-authored-by: Claude"</code> trailer — human author + Claude co-author (CLI).
   Union = A + B + C − A∩B − A∩C (B∩C ≈ 0).
-  Apr 2026 partial (1st–6th). GitHub Search API <code>total_count</code> is approximate for large result sets.
+  Mar 2026 partial (1st–30th). Apr 2026 partial (1st–6th). GitHub Search API <code>total_count</code> is approximate for large result sets.
 </div>
 
 <!-- ======================== VS CODE INSTALLS CHART ======================== -->
@@ -177,20 +177,20 @@
 <script>
 // ======================== DATA ========================
 const RAW_MONTHLY = [
-  {m:"2025-01",url:299,author:32654,coauthor:41,ab:0,ac:9,total:97415822,days:31},
-  {m:"2025-02",url:1202,author:19107,coauthor:2516,ab:10,ac:956,total:143246907,days:28},
-  {m:"2025-03",url:19397,author:17963,coauthor:19571,ab:447,ac:18748,total:125524357,days:31},
-  {m:"2025-04",url:16727,author:17955,coauthor:16955,ab:486,ac:16228,total:118608178,days:30},
-  {m:"2025-05",url:44320,author:19416,coauthor:45605,ab:781,ac:42805,total:127561844,days:31},
-  {m:"2025-06",url:260711,author:35600,coauthor:271892,ab:8117,ac:255401,total:116858056,days:30},
-  {m:"2025-07",url:475871,author:49511,coauthor:495488,ab:11916,ac:467377,total:129904804,days:31},
-  {m:"2025-08",url:588327,author:51152,coauthor:633947,ab:11131,ac:576504,total:129516628,days:31},
-  {m:"2025-09",url:501496,author:47372,coauthor:600481,ab:10481,ac:487538,total:139044584,days:30},
-  {m:"2025-10",url:124242,author:132260,coauthor:1038145,ab:6282,ac:53301,total:142907985,days:31},
-  {m:"2025-11",url:114645,author:816375,coauthor:1222081,ab:6792,ac:32068,total:149715712,days:30},
-  {m:"2025-12",url:120322,author:511674,coauthor:1626567,ab:3664,ac:27747,total:143734865,days:31},
-  {m:"2026-01",url:202293,author:605862,coauthor:3259835,ab:103192,ac:29008,total:154236344,days:31},
-  {m:"2026-02",url:687897,author:720316,coauthor:5415161,ab:575707,ac:47990,total:158225965,days:28},
+  {m:"2025-01",url:359,author:34059,coauthor:178,ab:1,ac:9,total:98289774,days:31},
+  {m:"2025-02",url:1221,author:20346,coauthor:2647,ab:11,ac:957,total:144756936,days:28},
+  {m:"2025-03",url:19199,author:19171,coauthor:19425,ab:366,ac:18524,total:127532668,days:31},
+  {m:"2025-04",url:16888,author:19260,coauthor:17198,ab:484,ac:16358,total:120564270,days:30},
+  {m:"2025-05",url:44383,author:20677,coauthor:45984,ab:747,ac:42808,total:129217885,days:31},
+  {m:"2025-06",url:261448,author:36508,coauthor:273582,ab:7904,ac:255955,total:118477522,days:30},
+  {m:"2025-07",url:471581,author:51420,coauthor:491838,ab:12012,ac:462952,total:129654152,days:31},
+  {m:"2025-08",url:580427,author:53154,coauthor:627855,ab:11025,ac:570632,total:127899572,days:31},
+  {m:"2025-09",url:493887,author:48793,coauthor:591819,ab:10276,ac:479632,total:136991761,days:30},
+  {m:"2025-10",url:122996,author:132498,coauthor:1025094,ab:6201,ac:52483,total:141014397,days:31},
+  {m:"2025-11",url:112066,author:790668,coauthor:1195376,ab:6596,ac:31067,total:148579754,days:30},
+  {m:"2025-12",url:118375,author:488017,coauthor:1607947,ab:3342,ac:26913,total:144133065,days:31},
+  {m:"2026-01",url:211210,author:590866,coauthor:3316187,ab:103315,ac:30788,total:157195526,days:31},
+  {m:"2026-02",url:686498,author:714718,coauthor:5538403,ab:571429,ac:48672,total:158040235,days:28},
   {m:"2026-03",url:1180147,author:1277108,coauthor:10523936,ab:1027610,ac:54932,total:220995480,days:31},
   {m:"2026-04",url:216560,author:239572,coauthor:1953200,ab:187053,ac:11871,total:37222124,days:6},
 ];
