@@ -88,7 +88,7 @@
 
 <div class="header">
   <h1>Claude Code Commits on GitHub</h1>
-  <p>Three detection signals tracked via GitHub Search API &middot; Jan 2025 – Mar 2026 &middot; Monthly &amp; Weekly views</p>
+  <p>Three detection signals tracked via GitHub Search API &middot; Jan 2025 – Apr 2026 &middot; Monthly &amp; Weekly views</p>
 </div>
 
 <div class="stats-row" id="stats-row"></div>
@@ -126,7 +126,7 @@
   Signal B: <code>author-name:Claude</code> — Claude as git author (Web).
   Signal C: <code>"Co-authored-by: Claude"</code> trailer — human author + Claude co-author (CLI).
   Union = A + B + C − A∩B − A∩C (B∩C ≈ 0).
-  Mar 2026 partial (1st–24th). GitHub Search API <code>total_count</code> is approximate for large result sets.
+  Apr 2026 partial (1st–6th). GitHub Search API <code>total_count</code> is approximate for large result sets.
 </div>
 
 <!-- ======================== VS CODE INSTALLS CHART ======================== -->
@@ -191,7 +191,8 @@ const RAW_MONTHLY = [
   {m:"2025-12",url:120322,author:511674,coauthor:1626567,ab:3664,ac:27747,total:143734865,days:31},
   {m:"2026-01",url:202293,author:605862,coauthor:3259835,ab:103192,ac:29008,total:154236344,days:31},
   {m:"2026-02",url:687897,author:720316,coauthor:5415161,ab:575707,ac:47990,total:158225965,days:28},
-  {m:"2026-03",url:805818,author:884468,coauthor:7039829,ab:706933,ac:33345,total:156014412,days:24},
+  {m:"2026-03",url:1180147,author:1277108,coauthor:10523936,ab:1027610,ac:54932,total:220995480,days:31},
+  {m:"2026-04",url:216560,author:239572,coauthor:1953200,ab:187053,ac:11871,total:37222124,days:6},
 ];
 
 const RAW_WEEKLY = [
@@ -259,7 +260,8 @@ const RAW_WEEKLY = [
   {w:"2026-W10",s:"2026-03-02",e:"2026-03-08",url:200850,author:218095,coauthor:1798874,ab:173150,ac:9884,total:49992412,days:7},
   {w:"2026-W11",s:"2026-03-09",e:"2026-03-15",url:251081,author:273391,coauthor:2043487,ab:222495,ac:10094,total:62873257,days:7},
   {w:"2026-W12",s:"2026-03-16",e:"2026-03-22",url:287546,author:313492,coauthor:2570719,ab:254346,ac:9953,total:58465257,days:7},
-  {w:"2026-W13",s:"2026-03-23",e:"2026-03-24",url:42093,author:46659,coauthor:390229,ab:37325,ac:1695,total:6313759,days:2},
+  {w:"2026-W13",s:"2026-03-23",e:"2026-03-29",url:341244,author:370326,coauthor:3173024,ab:295469,ac:18734,total:53399727,days:7},
+  {w:"2026-W14",s:"2026-03-30",e:"2026-04-05",url:299698,author:330397,coauthor:2724615,ab:258255,ac:16226,total:53647637,days:7},
 ];
 
 function enrichData(raw) {
