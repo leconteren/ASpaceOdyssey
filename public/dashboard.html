@@ -88,15 +88,20 @@
 
 <div class="header">
   <h1>Claude Code Commits on GitHub</h1>
-  <p>Three detection signals tracked via GitHub Search API &middot; Jan 2025 – Mar 2026</p>
+  <p>Three detection signals tracked via GitHub Search API &middot; Jan 2025 – Apr 2026 &middot; Monthly &amp; Weekly views</p>
 </div>
 
 <div class="stats-row" id="stats-row"></div>
 
 <div class="controls">
-  <label>View:</label>
+  <label>Granularity:</label>
+  <div class="btn-group" id="granularity-toggle">
+    <button class="active" data-granularity="monthly">Monthly</button>
+    <button data-granularity="weekly">Weekly</button>
+  </div>
+  <label style="margin-left:16px">View:</label>
   <div class="btn-group" id="view-toggle">
-    <button class="active" data-view="absolute">Monthly Total</button>
+    <button class="active" data-view="absolute">Total</button>
     <button data-view="daily">Daily Average</button>
     <button data-view="percent">% of All Commits</button>
   </div>
@@ -121,7 +126,7 @@
   Signal B: <code>author-name:Claude</code> — Claude as git author (Web).
   Signal C: <code>"Co-authored-by: Claude"</code> trailer — human author + Claude co-author (CLI).
   Union = A + B + C − A∩B − A∩C (B∩C ≈ 0).
-  Mar 2026 partial (1st–30th). GitHub Search API <code>total_count</code> is approximate for large result sets.
+  Mar 2026 partial (1st–30th). Apr 2026 partial (1st–6th). GitHub Search API <code>total_count</code> is approximate for large result sets.
 </div>
 
 <!-- ======================== VS CODE INSTALLS CHART ======================== -->
@@ -148,7 +153,7 @@
 
 <!-- ======================== NPM DOWNLOADS CHART ======================== -->
 <div class="header" style="margin-top: 16px;">
-  <h1>npm Weekly Downloads</h1>
+  <h1>npm Daily Downloads</h1>
   <p>Live data from npm registry API &middot; Updated on page load</p>
 </div>
 
@@ -165,13 +170,13 @@
 
 <div class="note">
   <strong>Data source:</strong> <a href="https://github.com/npm/registry/blob/main/docs/download-counts.md" style="color:#58a6ff" target="_blank">npm registry downloads API</a> (public, no auth required).
-  Shows weekly download counts aggregated from daily data. Packages tracked:
+  Shows raw daily download counts. Packages tracked:
   <code>@anthropic-ai/claude-code</code>, <code>@openai/codex</code>, <code>@githubnext/github-copilot-cli</code>.
 </div>
 
 <script>
 // ======================== DATA ========================
-const RAW = [
+const RAW_MONTHLY = [
   {m:"2025-01",url:359,author:34059,coauthor:178,ab:1,ac:9,total:98289774,days:31},
   {m:"2025-02",url:1221,author:20346,coauthor:2647,ab:11,ac:957,total:144756936,days:28},
   {m:"2025-03",url:19199,author:19171,coauthor:19425,ab:366,ac:18524,total:127532668,days:31},
@@ -186,16 +191,93 @@ const RAW = [
   {m:"2025-12",url:118375,author:488017,coauthor:1607947,ab:3342,ac:26913,total:144133065,days:31},
   {m:"2026-01",url:211210,author:590866,coauthor:3316187,ab:103315,ac:30788,total:157195526,days:31},
   {m:"2026-02",url:686498,author:714718,coauthor:5538403,ab:571429,ac:48672,total:158040235,days:28},
-  {m:"2026-03",url:1079714,author:1174055,coauthor:8970164,ab:941701,ac:50384,total:210483225,days:30},
+  {m:"2026-03",url:1180147,author:1277108,coauthor:10523936,ab:1027610,ac:54932,total:220995480,days:31},
+  {m:"2026-04",url:216560,author:239572,coauthor:1953200,ab:187053,ac:11871,total:37222124,days:6},
 ];
 
-const D = RAW.map(r => {
-  const union = r.url + r.author + r.coauthor - r.ab - r.ac;
-  const urlX = Math.max(0, r.url - r.ab - r.ac);
-  const authX = Math.max(0, r.author - r.ab);
-  const coauthX = Math.max(0, r.coauthor - r.ac);
-  return { ...r, union, urlX, authX, coauthX };
-});
+const RAW_WEEKLY = [
+  {w:"2025-W01",s:"2025-01-01",e:"2025-01-05",url:13,author:8767,coauthor:27,ab:1,ac:1,total:12793620,days:5},
+  {w:"2025-W02",s:"2025-01-06",e:"2025-01-12",url:52,author:6880,coauthor:36,ab:0,ac:7,total:21931327,days:7},
+  {w:"2025-W03",s:"2025-01-13",e:"2025-01-19",url:240,author:6899,coauthor:43,ab:0,ac:0,total:20962711,days:7},
+  {w:"2025-W04",s:"2025-01-20",e:"2025-01-26",url:22,author:6969,coauthor:40,ab:0,ac:1,total:23789115,days:7},
+  {w:"2025-W05",s:"2025-01-27",e:"2025-02-02",url:25,author:5281,coauthor:24,ab:0,ac:0,total:21471494,days:7},
+  {w:"2025-W06",s:"2025-02-03",e:"2025-02-09",url:19,author:6834,coauthor:106,ab:0,ac:0,total:37224252,days:7},
+  {w:"2025-W07",s:"2025-02-10",e:"2025-02-16",url:25,author:4383,coauthor:39,ab:0,ac:0,total:36989525,days:7},
+  {w:"2025-W08",s:"2025-02-17",e:"2025-02-23",url:45,author:3835,coauthor:49,ab:0,ac:3,total:36007096,days:7},
+  {w:"2025-W09",s:"2025-02-24",e:"2025-03-02",url:1521,author:3757,coauthor:2854,ab:11,ac:1343,total:35121753,days:7},
+  {w:"2025-W10",s:"2025-03-03",e:"2025-03-09",url:4023,author:4414,coauthor:4207,ab:212,ac:3903,total:27866235,days:7},
+  {w:"2025-W11",s:"2025-03-10",e:"2025-03-16",url:5067,author:4165,coauthor:5072,ab:26,ac:4894,total:25894062,days:7},
+  {w:"2025-W12",s:"2025-03-17",e:"2025-03-23",url:4069,author:4090,coauthor:4020,ab:40,ac:3926,total:28928553,days:7},
+  {w:"2025-W13",s:"2025-03-24",e:"2025-03-30",url:4076,author:4169,coauthor:4173,ab:157,ac:3957,total:29237581,days:7},
+  {w:"2025-W14",s:"2025-03-31",e:"2025-04-06",url:4498,author:4519,coauthor:4587,ab:142,ac:4389,total:29715592,days:7},
+  {w:"2025-W15",s:"2025-04-07",e:"2025-04-13",url:4333,author:4513,coauthor:4350,ab:262,ac:4233,total:26826118,days:7},
+  {w:"2025-W16",s:"2025-04-14",e:"2025-04-20",url:3760,author:4030,coauthor:3746,ab:30,ac:3627,total:25973673,days:7},
+  {w:"2025-W17",s:"2025-04-21",e:"2025-04-27",url:3371,author:4341,coauthor:3476,ab:47,ac:3213,total:26680227,days:7},
+  {w:"2025-W18",s:"2025-04-28",e:"2025-05-04",url:3084,author:4015,coauthor:3300,ab:11,ac:3005,total:25343849,days:7},
+  {w:"2025-W19",s:"2025-05-05",e:"2025-05-11",url:4612,author:3962,coauthor:4745,ab:46,ac:4490,total:29841237,days:7},
+  {w:"2025-W20",s:"2025-05-12",e:"2025-05-18",url:5116,author:4126,coauthor:5183,ab:154,ac:4806,total:27028949,days:7},
+  {w:"2025-W21",s:"2025-05-19",e:"2025-05-25",url:11462,author:4609,coauthor:11682,ab:307,ac:11083,total:27244397,days:7},
+  {w:"2025-W22",s:"2025-05-26",e:"2025-06-01",url:20972,author:5569,coauthor:22028,ab:234,ac:20254,total:26665884,days:7},
+  {w:"2025-W23",s:"2025-06-02",e:"2025-06-08",url:30048,author:5804,coauthor:31345,ab:472,ac:29131,total:25823828,days:7},
+  {w:"2025-W24",s:"2025-06-09",e:"2025-06-15",url:51806,author:7966,coauthor:53866,ab:1219,ac:50707,total:27251981,days:7},
+  {w:"2025-W25",s:"2025-06-16",e:"2025-06-22",url:69398,author:9604,coauthor:72120,ab:2762,ac:68230,total:26496374,days:7},
+  {w:"2025-W26",s:"2025-06-23",e:"2025-06-29",url:83040,author:9680,coauthor:86646,ab:2859,ac:81294,total:27228824,days:7},
+  {w:"2025-W27",s:"2025-06-30",e:"2025-07-06",url:84069,author:9341,coauthor:87463,ab:2047,ac:82779,total:26632913,days:7},
+  {w:"2025-W28",s:"2025-07-07",e:"2025-07-13",url:96999,author:11133,coauthor:100938,ab:2451,ac:95173,total:27099962,days:7},
+  {w:"2025-W29",s:"2025-07-14",e:"2025-07-20",url:100157,author:11331,coauthor:103722,ab:2665,ac:98148,total:33525914,days:7},
+  {w:"2025-W30",s:"2025-07-21",e:"2025-07-27",url:114380,author:11458,coauthor:119255,ab:2847,ac:112080,total:26947945,days:7},
+  {w:"2025-W31",s:"2025-07-28",e:"2025-08-03",url:121935,author:12711,coauthor:128167,ab:3184,ac:119877,total:27185407,days:7},
+  {w:"2025-W32",s:"2025-08-04",e:"2025-08-10",url:123557,author:13030,coauthor:132506,ab:2442,ac:121039,total:28474098,days:7},
+  {w:"2025-W33",s:"2025-08-11",e:"2025-08-17",url:130234,author:11035,coauthor:140409,ab:2221,ac:127490,total:28681175,days:7},
+  {w:"2025-W34",s:"2025-08-18",e:"2025-08-24",url:132299,author:11682,coauthor:143740,ab:2736,ac:129628,total:28289650,days:7},
+  {w:"2025-W35",s:"2025-08-25",e:"2025-08-31",url:127257,author:10327,coauthor:137288,ab:1862,ac:124464,total:29819214,days:7},
+  {w:"2025-W36",s:"2025-09-01",e:"2025-09-07",url:124068,author:10705,coauthor:132684,ab:2244,ac:121362,total:32078802,days:7},
+  {w:"2025-W37",s:"2025-09-08",e:"2025-09-14",url:119714,author:10502,coauthor:128878,ab:2255,ac:117335,total:32736515,days:7},
+  {w:"2025-W38",s:"2025-09-15",e:"2025-09-21",url:121927,author:11589,coauthor:131919,ab:3098,ac:119364,total:30643165,days:7},
+  {w:"2025-W39",s:"2025-09-22",e:"2025-09-28",url:108670,author:10595,coauthor:124873,ab:2269,ac:105880,total:30145084,days:7},
+  {w:"2025-W40",s:"2025-09-29",e:"2025-10-05",url:35879,author:11325,coauthor:178487,ab:841,ac:25738,total:30805449,days:7},
+  {w:"2025-W41",s:"2025-10-06",e:"2025-10-12",url:26651,author:11129,coauthor:193621,ab:419,ac:13056,total:30489639,days:7},
+  {w:"2025-W42",s:"2025-10-13",e:"2025-10-19",url:23675,author:10636,coauthor:199962,ab:366,ac:10167,total:30755082,days:7},
+  {w:"2025-W43",s:"2025-10-20",e:"2025-10-26",url:28233,author:51785,coauthor:271997,ab:3000,ac:8774,total:32702808,days:7},
+  {w:"2025-W44",s:"2025-10-27",e:"2025-11-02",url:26842,author:59726,coauthor:263717,ab:1943,ac:7929,total:32682233,days:7},
+  {w:"2025-W45",s:"2025-11-03",e:"2025-11-09",url:27529,author:162778,coauthor:256188,ab:1255,ac:8136,total:36500681,days:7},
+  {w:"2025-W46",s:"2025-11-10",e:"2025-11-16",url:26396,author:232920,coauthor:276215,ab:1951,ac:7523,total:33636926,days:7},
+  {w:"2025-W47",s:"2025-11-17",e:"2025-11-23",url:24899,author:252003,coauthor:267558,ab:2129,ac:6330,total:34633370,days:7},
+  {w:"2025-W48",s:"2025-11-24",e:"2025-11-30",url:23455,author:114718,coauthor:290475,ab:972,ac:6432,total:33108475,days:7},
+  {w:"2025-W49",s:"2025-12-01",e:"2025-12-07",url:24209,author:102465,coauthor:310958,ab:869,ac:6586,total:33387891,days:7},
+  {w:"2025-W50",s:"2025-12-08",e:"2025-12-14",url:25128,author:100808,coauthor:315689,ab:733,ac:5987,total:32926267,days:7},
+  {w:"2025-W51",s:"2025-12-15",e:"2025-12-21",url:25297,author:101078,coauthor:343171,ab:562,ac:5908,total:31867004,days:7},
+  {w:"2025-W52",s:"2025-12-22",e:"2025-12-28",url:25511,author:114710,coauthor:367393,ab:688,ac:5108,total:31094102,days:7},
+  {w:"2026-W01",s:"2025-12-29",e:"2026-01-04",url:32630,author:121860,coauthor:484403,ab:831,ac:5706,total:30018103,days:7},
+  {w:"2026-W02",s:"2026-01-05",e:"2026-01-11",url:28788,author:126505,coauthor:600563,ab:806,ac:6306,total:33606605,days:7},
+  {w:"2026-W03",s:"2026-01-12",e:"2026-01-18",url:17736,author:123575,coauthor:710605,ab:691,ac:5274,total:36207433,days:7},
+  {w:"2026-W04",s:"2026-01-19",e:"2026-01-25",url:35212,author:142114,coauthor:828905,ab:15304,ac:6018,total:36371934,days:7},
+  {w:"2026-W05",s:"2026-01-26",e:"2026-02-01",url:110375,author:133398,coauthor:917441,ab:85871,ac:9872,total:34806335,days:7},
+  {w:"2026-W06",s:"2026-02-02",e:"2026-02-08",url:146968,author:156678,coauthor:1064679,ab:120940,ac:11464,total:34480113,days:7},
+  {w:"2026-W07",s:"2026-02-09",e:"2026-02-15",url:160093,author:162616,coauthor:1193227,ab:133633,ac:10908,total:35954580,days:7},
+  {w:"2026-W08",s:"2026-02-16",e:"2026-02-22",url:174991,author:183016,coauthor:1430535,ab:147522,ac:11125,total:42435422,days:7},
+  {w:"2026-W09",s:"2026-02-23",e:"2026-03-01",url:184203,author:197312,coauthor:1563503,ab:155924,ac:12041,total:40788760,days:7},
+  {w:"2026-W10",s:"2026-03-02",e:"2026-03-08",url:200850,author:218095,coauthor:1798874,ab:173150,ac:9884,total:49992412,days:7},
+  {w:"2026-W11",s:"2026-03-09",e:"2026-03-15",url:251081,author:273391,coauthor:2043487,ab:222495,ac:10094,total:62873257,days:7},
+  {w:"2026-W12",s:"2026-03-16",e:"2026-03-22",url:287546,author:313492,coauthor:2570719,ab:254346,ac:9953,total:58465257,days:7},
+  {w:"2026-W13",s:"2026-03-23",e:"2026-03-29",url:341244,author:370326,coauthor:3173024,ab:295469,ac:18734,total:53399727,days:7},
+  {w:"2026-W14",s:"2026-03-30",e:"2026-04-05",url:299698,author:330397,coauthor:2724615,ab:258255,ac:16226,total:53647637,days:7},
+];
+
+function enrichData(raw) {
+  return raw.map(r => {
+    const union = r.url + r.author + r.coauthor - r.ab - r.ac;
+    const urlX = Math.max(0, r.url - r.ab - r.ac);
+    const authX = Math.max(0, r.author - r.ab);
+    const coauthX = Math.max(0, r.coauthor - r.ac);
+    return { ...r, union, urlX, authX, coauthX };
+  });
+}
+
+const D_MONTHLY = enrichData(RAW_MONTHLY);
+const D_WEEKLY = enrichData(RAW_WEEKLY);
+let granularity = 'monthly';
+let D = D_MONTHLY;
 
 // ======================== CONFIG ========================
 const COLORS = {
@@ -215,16 +297,20 @@ function fmt(n) {
   if (n >= 1e3) return (n / 1e3).toFixed(1) + 'K';
   return n.toLocaleString();
 }
-const last = D[D.length - 1];
-document.getElementById('stats-row').innerHTML = [
-  ['signal-url',      'Signal A: URL',          fmt(last.url),      `${fmt(Math.round(last.url/last.days))}/day`, '#f78166'],
-  ['signal-author',   'Signal B: Author',       fmt(last.author),   `${fmt(Math.round(last.author/last.days))}/day`, '#d2a8ff'],
-  ['signal-coauthor', 'Signal C: Co-Author',    fmt(last.coauthor), `${fmt(Math.round(last.coauthor/last.days))}/day`, '#79c0ff'],
-  ['signal-union',    'Union',                   fmt(last.union),    `${fmt(Math.round(last.union/last.days))}/day`, '#56d364'],
-  ['signal-pct',      '% of all commits',        (last.union / last.total * 100).toFixed(2) + '%', 'Feb 2026 (partial)', '#e3b341'],
-].map(([cls, label, value, sub, color]) =>
-  `<div class="stat-card"><div class="label">${label}</div><div class="value" style="color:${color}">${value}</div><div class="sub">${sub}</div></div>`
-).join('');
+function updateStats() {
+  const last = D[D.length - 1];
+  const period = last.m || last.w;
+  document.getElementById('stats-row').innerHTML = [
+    ['signal-url',      'Signal A: URL',          fmt(last.url),      `${fmt(Math.round(last.url/last.days))}/day`, '#f78166'],
+    ['signal-author',   'Signal B: Author',       fmt(last.author),   `${fmt(Math.round(last.author/last.days))}/day`, '#d2a8ff'],
+    ['signal-coauthor', 'Signal C: Co-Author',    fmt(last.coauthor), `${fmt(Math.round(last.coauthor/last.days))}/day`, '#79c0ff'],
+    ['signal-union',    'Union',                   fmt(last.union),    `${fmt(Math.round(last.union/last.days))}/day`, '#56d364'],
+    ['signal-pct',      '% of all commits',        (last.union / last.total * 100).toFixed(2) + '%', `${period} (partial)`, '#e3b341'],
+  ].map(([cls, label, value, sub, color]) =>
+    `<div class="stat-card"><div class="label">${label}</div><div class="value" style="color:${color}">${value}</div><div class="sub">${sub}</div></div>`
+  ).join('');
+}
+updateStats();
 
 // ======================== CHART ENGINE ========================
 const canvas = document.getElementById('chart');
@@ -353,14 +439,28 @@ function draw() {
     const x = xPos(i);
     ctx.strokeStyle = '#21262d'; ctx.lineWidth = 1;
     ctx.beginPath(); ctx.moveTo(x, padT); ctx.lineTo(x, padT + ch); ctx.stroke();
-    const parts = d.m.split('-');
-    const label = i % 2 === 0 || n <= 8 ? parts[0].slice(2) + '/' + parts[1] : '';
-    if (label) ctx.fillText(label, x, padT + ch + 20);
+    let label = '';
+    if (d.m) {
+      // Monthly: show "25/01" every 2 points
+      const parts = d.m.split('-');
+      label = i % 2 === 0 || n <= 8 ? parts[0].slice(2) + '/' + parts[1] : '';
+    } else if (d.w) {
+      // Weekly: show label every 4 weeks, format "M/D"
+      const skip = n > 30 ? 4 : n > 15 ? 2 : 1;
+      if (i % skip === 0) {
+        const s = new Date(d.s + 'T00:00:00');
+        label = (s.getMonth() + 1) + '/' + s.getDate();
+      }
+    }
+    if (label) {
+      ctx.font = '11px -apple-system, sans-serif';
+      ctx.fillText(label, x, padT + ch + 20);
+    }
   });
 
   // ---- BARS: Total commits (draw FIRST so they sit behind lines/areas) ----
   if (showBars) {
-    const barW = Math.max(8, (cw / n) * 0.55);
+    const barW = Math.max(4, (cw / n) * (n > 30 ? 0.7 : 0.55));
     D.forEach((d, i) => {
       const x = xPos(i);
       const val = totalVals[i];
@@ -459,8 +559,9 @@ function draw() {
   ctx.fillStyle = '#8b949e';
   ctx.font = '12px -apple-system, sans-serif';
   ctx.textAlign = 'center';
+  const periodLabel = granularity === 'weekly' ? 'weekly' : 'monthly';
   const yLabel = view === 'percent' ? '% of all public commits'
-    : view === 'daily' ? 'Claude commits / day' : 'Claude commits (monthly)';
+    : view === 'daily' ? 'Claude commits / day' : `Claude commits (${periodLabel})`;
   ctx.fillText(yLabel, 0, 0);
   ctx.restore();
 
@@ -472,7 +573,7 @@ function draw() {
     ctx.fillStyle = 'rgba(139,148,158,0.6)';
     ctx.font = '12px -apple-system, sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText(view === 'daily' ? 'All GitHub commits / day' : 'All GitHub commits (monthly)', 0, 0);
+    ctx.fillText(view === 'daily' ? 'All GitHub commits / day' : `All GitHub commits (${periodLabel})`, 0, 0);
     ctx.restore();
   }
 }
@@ -507,7 +608,8 @@ canvas.addEventListener('mousemove', e => {
   const d = D[idx];
   const activeKeys = SERIES_KEYS.filter(k => !hidden.has(k));
 
-  let html = `<div class="tt-title">${d.m} (${d.days} days)</div>`;
+  const ttTitle = d.m ? `${d.m} (${d.days} days)` : `${d.w}: ${d.s} → ${d.e} (${d.days}d)`;
+  let html = `<div class="tt-title">${ttTitle}</div>`;
   // Show in reverse order (top signal first)
   [...activeKeys].reverse().forEach(k => {
     const v = getValues(k, d);
@@ -563,6 +665,24 @@ function renderLegend() {
 }
 
 // ======================== CONTROLS ========================
+document.querySelectorAll('#granularity-toggle button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#granularity-toggle button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    granularity = btn.dataset.granularity;
+    D = granularity === 'weekly' ? D_WEEKLY : D_MONTHLY;
+    if (D.length === 0) {
+      alert('Weekly data not yet loaded. Please try again later.');
+      D = D_MONTHLY;
+      granularity = 'monthly';
+      document.querySelector('#granularity-toggle button[data-granularity="monthly"]').classList.add('active');
+      btn.classList.remove('active');
+      return;
+    }
+    updateStats();
+    draw();
+  });
+});
 document.querySelectorAll('#view-toggle button').forEach(btn => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('#view-toggle button').forEach(b => b.classList.remove('active'));
@@ -841,8 +961,8 @@ async function fetchNpmData() {
     }
   }));
 
-  // Aggregate daily data into weekly buckets
-  const dailyMap = {}; // date -> { claude: n, codex: n, copilot: n }
+  // Build daily map
+  const dailyMap = {};
   results.forEach(r => {
     r.downloads.forEach(d => {
       if (!dailyMap[d.day]) dailyMap[d.day] = { claude: 0, codex: 0, copilot: 0 };
@@ -853,41 +973,24 @@ async function fetchNpmData() {
   const sortedDays = Object.keys(dailyMap).sort();
   if (sortedDays.length === 0) return null;
 
-  // Group into weeks (Mon-Sun)
-  const weeks = [];
-  let weekStart = null, weekData = { claude: 0, codex: 0, copilot: 0 };
-  sortedDays.forEach(day => {
-    const dow = new Date(day + 'T00:00:00').getDay(); // 0=Sun
-    if (dow === 1 && weekStart) {
-      weeks.push({ week: weekStart, ...weekData });
-      weekData = { claude: 0, codex: 0, copilot: 0 };
-      weekStart = day;
-    }
-    if (!weekStart) weekStart = day;
-    weekData.claude += dailyMap[day].claude;
-    weekData.codex += dailyMap[day].codex;
-    weekData.copilot += dailyMap[day].copilot;
-  });
-  if (weekStart) weeks.push({ week: weekStart, ...weekData });
-
-  return weeks;
+  return sortedDays.map(day => ({ day, ...dailyMap[day] }));
 }
 
 async function initNpmChart() {
-  const weeks = await fetchNpmData();
+  const days = await fetchNpmData();
   const loadingEl = document.getElementById('npm-loading');
 
-  if (!weeks || weeks.length === 0) {
+  if (!days || days.length === 0) {
     loadingEl.textContent = 'Failed to load npm data. Try refreshing.';
     return;
   }
   loadingEl.style.display = 'none';
 
-  // Stats
-  const lastW = weeks[weeks.length - 1];
+  // Stats — show latest day
+  const lastD = days[days.length - 1];
   document.getElementById('stats-row3').innerHTML = NPM_PACKAGES.map(p => {
-    const val = lastW[p.key];
-    return `<div class="stat-card"><div class="label">${p.name}</div><div class="value" style="color:${p.stroke}">${val.toLocaleString()}</div><div class="sub">Last week downloads</div></div>`;
+    const val = lastD[p.key];
+    return `<div class="stat-card"><div class="label">${p.name}</div><div class="value" style="color:${p.stroke}">${val.toLocaleString()}</div><div class="sub">Latest daily downloads</div></div>`;
   }).join('');
 
   // Chart
@@ -910,13 +1013,13 @@ async function initNpmChart() {
     const fullW = W3 + 48;
     const cw = fullW - padL - padR;
     const ch = H3 - padT - padB;
-    const n = weeks.length;
+    const n = days.length;
 
     ctx3.clearRect(0, 0, fullW, H3);
 
     const allVals = [];
     NPM_PACKAGES.forEach(p => {
-      if (!hidden3.has(p.key)) weeks.forEach(w => allVals.push(w[p.key]));
+      if (!hidden3.has(p.key)) days.forEach(d => allVals.push(d[p.key]));
     });
     const maxVal = Math.max(...allVals, 1000) * 1.12;
 
@@ -942,14 +1045,14 @@ async function initNpmChart() {
     // X labels
     ctx3.textAlign = 'center'; ctx3.fillStyle = '#8b949e';
     const labelEvery = Math.max(1, Math.floor(n / 15));
-    weeks.forEach((w, i) => {
+    days.forEach((d, i) => {
       const x = xP(i);
       if (i % labelEvery === 0 || i === n - 1) {
         ctx3.strokeStyle = '#21262d'; ctx3.lineWidth = 1;
         ctx3.beginPath(); ctx3.moveTo(x, padT); ctx3.lineTo(x, padT + ch); ctx3.stroke();
         ctx3.save(); ctx3.translate(x, padT + ch + 14);
         ctx3.rotate(-Math.PI / 6);
-        ctx3.fillText(w.week, 0, 0);
+        ctx3.fillText(d.day, 0, 0);
         ctx3.restore();
       }
     });
@@ -961,7 +1064,7 @@ async function initNpmChart() {
       // Area
       ctx3.beginPath();
       for (let i = 0; i < n; i++) {
-        const x = xP(i), y = yP(weeks[i][p.key]);
+        const x = xP(i), y = yP(days[i][p.key]);
         i === 0 ? ctx3.moveTo(x, y) : ctx3.lineTo(x, y);
       }
       ctx3.lineTo(xP(n - 1), yP(0));
@@ -973,7 +1076,7 @@ async function initNpmChart() {
       // Line
       ctx3.beginPath();
       for (let i = 0; i < n; i++) {
-        const x = xP(i), y = yP(weeks[i][p.key]);
+        const x = xP(i), y = yP(days[i][p.key]);
         i === 0 ? ctx3.moveTo(x, y) : ctx3.lineTo(x, y);
       }
       ctx3.strokeStyle = p.stroke;
@@ -994,7 +1097,7 @@ async function initNpmChart() {
     ctx3.rotate(-Math.PI / 2);
     ctx3.fillStyle = '#8b949e'; ctx3.font = '12px -apple-system, sans-serif';
     ctx3.textAlign = 'center';
-    ctx3.fillText('Weekly downloads', 0, 0);
+    ctx3.fillText('Daily downloads', 0, 0);
     ctx3.restore();
   }
 
@@ -1020,18 +1123,18 @@ async function initNpmChart() {
     const mx = e.clientX - rect.left;
     const padL = 72, padR = 24;
     const cw3 = rect.width - padL - padR;
-    const n = weeks.length;
+    const n = days.length;
     const frac = (mx - padL) / cw3;
     const idx = Math.round(frac * (n - 1));
     if (idx < 0 || idx >= n || frac < -0.02 || frac > 1.02) {
       hoverIdx3 = -1; tooltip3.style.display = 'none'; draw3(); return;
     }
     hoverIdx3 = idx; draw3();
-    const w = weeks[idx];
-    let html = `<div class="tt-title">Week of ${w.week}</div>`;
+    const d = days[idx];
+    let html = `<div class="tt-title">${d.day}</div>`;
     NPM_PACKAGES.forEach(p => {
       if (hidden3.has(p.key)) return;
-      html += `<div class="tt-row"><span><span class="tt-dot" style="background:${p.stroke}"></span>${p.name}</span><span class="tt-val">${w[p.key].toLocaleString()}</span></div>`;
+      html += `<div class="tt-row"><span><span class="tt-dot" style="background:${p.stroke}"></span>${p.name}</span><span class="tt-val">${d[p.key].toLocaleString()}</span></div>`;
     });
     tooltip3.innerHTML = html;
     tooltip3.style.display = 'block';
