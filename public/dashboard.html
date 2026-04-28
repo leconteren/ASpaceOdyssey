@@ -126,7 +126,7 @@
   Signal B: <code>author-name:Claude</code> — Claude as git author (Web).
   Signal C: <code>"Co-authored-by: Claude"</code> trailer — human author + Claude co-author (CLI).
   Union = A + B + C − A∩B − A∩C (B∩C ≈ 0).
-  Mar 2026 partial (1st–30th). Apr 2026 partial (1st–6th). GitHub Search API <code>total_count</code> is approximate for large result sets.
+  Mar 2026 partial (1st–30th). Apr 2026 partial (1st–19th). GitHub Search API <code>total_count</code> is approximate for large result sets.
 </div>
 
 <!-- ======================== VS CODE INSTALLS CHART ======================== -->
@@ -192,7 +192,7 @@ const RAW_MONTHLY = [
   {m:"2026-01",url:211210,author:590866,coauthor:3316187,ab:103315,ac:30788,total:157195526,days:31},
   {m:"2026-02",url:686498,author:714718,coauthor:5538403,ab:571429,ac:48672,total:158040235,days:28},
   {m:"2026-03",url:1180147,author:1277108,coauthor:10523936,ab:1027610,ac:54932,total:220995480,days:31},
-  {m:"2026-04",url:216560,author:239572,coauthor:1953200,ab:187053,ac:11871,total:37222124,days:6},
+  {m:"2026-04",url:765889,author:1008019,coauthor:7941957,ab:646437,ac:40285,total:146984849,days:19},
 ];
 
 const RAW_WEEKLY = [
@@ -262,6 +262,8 @@ const RAW_WEEKLY = [
   {w:"2026-W12",s:"2026-03-16",e:"2026-03-22",url:287546,author:313492,coauthor:2570719,ab:254346,ac:9953,total:58465257,days:7},
   {w:"2026-W13",s:"2026-03-23",e:"2026-03-29",url:341244,author:370326,coauthor:3173024,ab:295469,ac:18734,total:53399727,days:7},
   {w:"2026-W14",s:"2026-03-30",e:"2026-04-05",url:299698,author:330397,coauthor:2724615,ab:258255,ac:16226,total:53647637,days:7},
+  {w:"2026-W15",s:"2026-04-06",e:"2026-04-12",url:317258,author:372046,coauthor:3211182,ab:270691,ac:15868,total:61537403,days:7},
+  {w:"2026-W16",s:"2026-04-13",e:"2026-04-19",url:284105,author:458704,coauthor:3293379,ab:234372,ac:15675,total:58622979,days:7},
 ];
 
 function enrichData(raw) {
@@ -748,7 +750,8 @@ const VSCODE = [
   {d:"2026-03-12",claude:72000,codex:53000},
   {d:"2026-03-22",claude:91000,codex:46000},
   {d:"2026-04-01",claude:100000,codex:46000},
-  {d:"2026-04-06",claude:110000,codex:45000},
+  {d:"2026-04-11",claude:112000,codex:47000},
+  {d:"2026-04-16",claude:122000,codex:48000},
 ];
 
 const VSCODE_COLORS = {
