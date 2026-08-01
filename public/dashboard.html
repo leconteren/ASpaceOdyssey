@@ -88,7 +88,7 @@
 
 <div class="header">
   <h1>Claude Code Commits on GitHub</h1>
-  <p>Three detection signals tracked via GitHub Search API &middot; Jan 2025 – Apr 2026 &middot; Monthly &amp; Weekly views</p>
+  <p>Three detection signals tracked via GitHub Search API &middot; <span id="date-range"></span> &middot; Monthly &amp; Weekly views</p>
 </div>
 
 <div class="stats-row" id="stats-row"></div>
@@ -126,7 +126,8 @@
   Signal B: <code>author-name:Claude</code> — Claude as git author (Web).
   Signal C: <code>"Co-authored-by: Claude"</code> trailer — human author + Claude co-author (CLI).
   Union = A + B + C − A∩B − A∩C (B∩C ≈ 0).
-  Mar 2026 partial (1st–30th). Apr 2026 partial (1st–6th). GitHub Search API <code>total_count</code> is approximate for large result sets.
+  <span id="partial-note"></span> GitHub Search API <code>total_count</code> is approximate for large result sets.
+  Apr–Jul 2026 backfilled on Aug 1, 2026; GitHub's search index shrinks over time (deleted repos, rewritten history), so backfilled counts run lower than points captured near real-time.
 </div>
 
 <!-- ======================== VS CODE INSTALLS CHART ======================== -->
@@ -192,7 +193,10 @@ const RAW_MONTHLY = [
   {m:"2026-01",url:211210,author:590866,coauthor:3316187,ab:103315,ac:30788,total:157195526,days:31},
   {m:"2026-02",url:686498,author:714718,coauthor:5538403,ab:571429,ac:48672,total:158040235,days:28},
   {m:"2026-03",url:1180147,author:1277108,coauthor:10523936,ab:1027610,ac:54932,total:220995480,days:31},
-  {m:"2026-04",url:216560,author:239572,coauthor:1953200,ab:187053,ac:11871,total:37222124,days:6},
+  {m:"2026-04",url:758806,author:1555810,coauthor:6846446,ab:868543,ac:65130,total:206596874,days:30},
+  {m:"2026-05",url:849915,author:1761572,coauthor:5965899,ab:853760,ac:104883,total:250819822,days:31},
+  {m:"2026-06",url:2203275,author:2319831,coauthor:7809544,ab:1351592,ac:1011254,total:299461680,days:30},
+  {m:"2026-07",url:3931858,author:2944541,coauthor:9821989,ab:1790790,ac:2482138,total:392406753,days:31},
 ];
 
 const RAW_WEEKLY = [
@@ -262,6 +266,22 @@ const RAW_WEEKLY = [
   {w:"2026-W12",s:"2026-03-16",e:"2026-03-22",url:287546,author:313492,coauthor:2570719,ab:254346,ac:9953,total:58465257,days:7},
   {w:"2026-W13",s:"2026-03-23",e:"2026-03-29",url:341244,author:370326,coauthor:3173024,ab:295469,ac:18734,total:53399727,days:7},
   {w:"2026-W14",s:"2026-03-30",e:"2026-04-05",url:299698,author:330397,coauthor:2724615,ab:258255,ac:16226,total:53647637,days:7},
+  {w:"2026-W15",s:"2026-04-06",e:"2026-04-12",url:317258,author:372046,coauthor:3211182,ab:270691,ac:15868,total:61537403,days:7},
+  {w:"2026-W16",s:"2026-04-13",e:"2026-04-19",url:284105,author:458704,coauthor:3293379,ab:234372,ac:15675,total:58622979,days:7},
+  {w:"2026-W17",s:"2026-04-20",e:"2026-04-26",url:244761,author:440710,coauthor:2731856,ab:196418,ac:16158,total:55660209,days:7},
+  {w:"2026-W18",s:"2026-04-27",e:"2026-05-03",url:247774,author:418163,coauthor:2256939,ab:184426,ac:17205,total:54183734,days:7},
+  {w:"2026-W19",s:"2026-05-04",e:"2026-05-10",url:266871,author:450493,coauthor:2825244,ab:191421,ac:25189,total:56105654,days:7},
+  {w:"2026-W20",s:"2026-05-11",e:"2026-05-17",url:302071,author:495476,coauthor:3355175,ab:215042,ac:32336,total:58918687,days:7},
+  {w:"2026-W21",s:"2026-05-18",e:"2026-05-24",url:329425,author:490820,coauthor:2156692,ab:260441,ac:29387,total:57413376,days:7},
+  {w:"2026-W22",s:"2026-05-25",e:"2026-05-31",url:377764,author:533154,coauthor:1378753,ab:285402,ac:32884,total:82375863,days:7},
+  {w:"2026-W23",s:"2026-06-01",e:"2026-06-07",url:381323,author:560938,coauthor:1300320,ab:298936,ac:35949,total:60195132,days:7},
+  {w:"2026-W24",s:"2026-06-08",e:"2026-06-14",url:480350,author:706913,coauthor:2465536,ab:368993,ac:45153,total:65659255,days:7},
+  {w:"2026-W25",s:"2026-06-15",e:"2026-06-21",url:621472,author:669506,coauthor:2508313,ab:389596,ac:426063,total:72658701,days:7},
+  {w:"2026-W26",s:"2026-06-22",e:"2026-06-28",url:761607,author:633429,coauthor:3879894,ab:395337,ac:678105,total:71362771,days:7},
+  {w:"2026-W27",s:"2026-06-29",e:"2026-07-05",url:932735,author:712243,coauthor:2984176,ab:442528,ac:802610,total:70918178,days:7},
+  {w:"2026-W28",s:"2026-07-06",e:"2026-07-12",url:1005371,author:733530,coauthor:4792132,ab:463482,ac:914862,total:79114046,days:7},
+  {w:"2026-W29",s:"2026-07-13",e:"2026-07-19",url:890329,author:747599,coauthor:4747495,ab:454550,ac:816738,total:85825031,days:7},
+  {w:"2026-W30",s:"2026-07-20",e:"2026-07-26",url:1082581,author:780294,coauthor:4220995,ab:474606,ac:646373,total:144371157,days:7},
 ];
 
 function enrichData(raw) {
@@ -297,6 +317,11 @@ function fmt(n) {
   if (n >= 1e3) return (n / 1e3).toFixed(1) + 'K';
   return n.toLocaleString();
 }
+const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+function monthLabel(m) { const [y, mo] = m.split('-').map(Number); return MONTH_NAMES[mo - 1] + ' ' + y; }
+function daysInMonth(m) { const [y, mo] = m.split('-').map(Number); return new Date(y, mo, 0).getDate(); }
+function isPartial(d) { return d.m ? d.days < daysInMonth(d.m) : d.days < 7; }
+function ordinal(n) { const v = n % 100, s = ['th','st','nd','rd']; return n + (s[(v-20)%10] || s[v] || s[0]); }
 function updateStats() {
   const last = D[D.length - 1];
   const period = last.m || last.w;
@@ -305,12 +330,22 @@ function updateStats() {
     ['signal-author',   'Signal B: Author',       fmt(last.author),   `${fmt(Math.round(last.author/last.days))}/day`, '#d2a8ff'],
     ['signal-coauthor', 'Signal C: Co-Author',    fmt(last.coauthor), `${fmt(Math.round(last.coauthor/last.days))}/day`, '#79c0ff'],
     ['signal-union',    'Union',                   fmt(last.union),    `${fmt(Math.round(last.union/last.days))}/day`, '#56d364'],
-    ['signal-pct',      '% of all commits',        (last.union / last.total * 100).toFixed(2) + '%', `${period} (partial)`, '#e3b341'],
+    ['signal-pct',      '% of all commits',        (last.union / last.total * 100).toFixed(2) + '%', isPartial(last) ? `${period} (partial)` : period, '#e3b341'],
   ].map(([cls, label, value, sub, color]) =>
     `<div class="stat-card"><div class="label">${label}</div><div class="value" style="color:${color}">${value}</div><div class="sub">${sub}</div></div>`
   ).join('');
 }
 updateStats();
+
+// Fill data-driven header labels from RAW_MONTHLY
+(function () {
+  const first = RAW_MONTHLY[0], last = RAW_MONTHLY[RAW_MONTHLY.length - 1];
+  document.getElementById('date-range').textContent =
+    monthLabel(first.m) + ' – ' + monthLabel(last.m);
+  document.getElementById('partial-note').textContent = isPartial(last)
+    ? `${monthLabel(last.m)} partial (1st–${ordinal(last.days)}).`
+    : `All months complete through ${monthLabel(last.m)}.`;
+})();
 
 // ======================== CHART ENGINE ========================
 const canvas = document.getElementById('chart');
@@ -747,6 +782,10 @@ const VSCODE = [
   {d:"2026-03-02",claude:55000,codex:50000},
   {d:"2026-03-12",claude:72000,codex:53000},
   {d:"2026-03-22",claude:91000,codex:46000},
+  {d:"2026-04-01",claude:100000,codex:46000},
+  {d:"2026-04-11",claude:112000,codex:47000},
+  {d:"2026-04-18",claude:120000,codex:50000},
+  {d:"2026-04-26",claude:122105,codex:51271},
 ];
 
 const VSCODE_COLORS = {
