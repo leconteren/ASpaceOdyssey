@@ -88,7 +88,7 @@
 
 <div class="header">
   <h1>Claude Code Commits on GitHub</h1>
-  <p>Three detection signals tracked via GitHub Search API &middot; Jan 2025 – Apr 2026 &middot; Monthly &amp; Weekly views</p>
+  <p>Three detection signals tracked via GitHub Search API &middot; <span id="date-range">Jan 2025 – Apr 2026</span> &middot; Monthly &amp; Weekly views</p>
 </div>
 
 <div class="stats-row" id="stats-row"></div>
@@ -126,7 +126,7 @@
   Signal B: <code>author-name:Claude</code> — Claude as git author (Web).
   Signal C: <code>"Co-authored-by: Claude"</code> trailer — human author + Claude co-author (CLI).
   Union = A + B + C − A∩B − A∩C (B∩C ≈ 0).
-  Mar 2026 partial (1st–30th). Apr 2026 partial (1st–19th). GitHub Search API <code>total_count</code> is approximate for large result sets.
+  <span id="partial-note"></span> GitHub Search API <code>total_count</code> is approximate for large result sets.
 </div>
 
 <!-- ======================== VS CODE INSTALLS CHART ======================== -->
@@ -299,6 +299,11 @@ function fmt(n) {
   if (n >= 1e3) return (n / 1e3).toFixed(1) + 'K';
   return n.toLocaleString();
 }
+const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+function monthLabel(m) { const [y, mo] = m.split('-').map(Number); return MONTH_NAMES[mo - 1] + ' ' + y; }
+function daysInMonth(m) { const [y, mo] = m.split('-').map(Number); return new Date(y, mo, 0).getDate(); }
+function isPartial(d) { return d.m ? d.days < daysInMonth(d.m) : d.days < 7; }
+function ordinal(n) { const v = n % 100, s = ['th','st','nd','rd']; return n + (s[(v-20)%10] || s[v] || s[0]); }
 function updateStats() {
   const last = D[D.length - 1];
   const period = last.m || last.w;
@@ -307,12 +312,22 @@ function updateStats() {
     ['signal-author',   'Signal B: Author',       fmt(last.author),   `${fmt(Math.round(last.author/last.days))}/day`, '#d2a8ff'],
     ['signal-coauthor', 'Signal C: Co-Author',    fmt(last.coauthor), `${fmt(Math.round(last.coauthor/last.days))}/day`, '#79c0ff'],
     ['signal-union',    'Union',                   fmt(last.union),    `${fmt(Math.round(last.union/last.days))}/day`, '#56d364'],
-    ['signal-pct',      '% of all commits',        (last.union / last.total * 100).toFixed(2) + '%', `${period} (partial)`, '#e3b341'],
+    ['signal-pct',      '% of all commits',        (last.union / last.total * 100).toFixed(2) + '%', isPartial(last) ? `${period} (partial)` : period, '#e3b341'],
   ].map(([cls, label, value, sub, color]) =>
     `<div class="stat-card"><div class="label">${label}</div><div class="value" style="color:${color}">${value}</div><div class="sub">${sub}</div></div>`
   ).join('');
 }
 updateStats();
+
+// Fill data-driven header labels from RAW_MONTHLY
+(function () {
+  const first = RAW_MONTHLY[0], last = RAW_MONTHLY[RAW_MONTHLY.length - 1];
+  document.getElementById('date-range').textContent =
+    monthLabel(first.m) + ' – ' + monthLabel(last.m);
+  document.getElementById('partial-note').textContent = isPartial(last)
+    ? `${monthLabel(last.m)} partial (1st–${ordinal(last.days)}).`
+    : `All months complete through ${monthLabel(last.m)}.`;
+})();
 
 // ======================== CHART ENGINE ========================
 const canvas = document.getElementById('chart');
